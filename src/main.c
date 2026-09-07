@@ -12,7 +12,7 @@
 #include <string.h>
 #include "app.h"
 
-static void draw_frame(struct app *app)
+static void draw_frame(struct xway_app *app)
 {
 	int32_t x;
 	int32_t y;
@@ -20,60 +20,59 @@ static void draw_frame(struct app *app)
 	uint32_t *row;
 
 	y = 0;
-	while(y < app->height)
+	while (y < app->height)
 	{
-		row_start = (uint8_t *)app->pixels + (size_t)y * (size_t)app->stride;
+		row_start = (uint8_t *)app->pixels + (size_t)y * (size_t)app->stride_bytes;
 		row = (uint32_t *)row_start;
+
 		x = 0;
-		while(x < app->width)
+		while (x < app->width)
 		{
-			row[x] =  0x00202020;
+			row[x] = 0x00FFFFFF;
 			x++;
 		}
+
 		y++;
 	}
 }
+
+static int run_app(struct xway_app *app)
+{
+	if (xway_app_init(app) == -1)
+		return (EXIT_FAILURE);
+
+	if (xway_window_create(app) == -1)
+		return (EXIT_FAILURE);
+
+	if (xway_buffer_create(app) == -1)
+		return (EXIT_FAILURE);
+
+	draw_frame(app);
+
+	wl_surface_attach(app->surface, app->buffer, 0, 0);
+	wl_surface_damage(app->surface, 0, 0, app->width, app->height);
+	wl_surface_commit(app->surface);
+
+	while (app->running != 0)
+	{
+		if (wl_display_dispatch(app->display) == -1)
+			return (EXIT_FAILURE);
+	}
+
+	return (EXIT_SUCCESS);
+}
+
 int main(void)
 {
-	struct app app = {0};
-	int status = EXIT_FAILURE;
+	struct xway_app app = {0};
+	int exit_status;
 
 	app.width = 800;
 	app.height = 600;
 
-	if(wayland_init(&app) == -1)
-		goto cleanup;
+	exit_status = run_app(&app);
 
-	if(window_create(&app) == -1)
-		goto cleanup;
+	xway_app_cleanup(&app);
 
-	if(create_buffer(&app) == -1)
-		goto cleanup;
-
-	draw_frame(&app);
-
-	wl_surface_attach(
-		app.surface,
-		app.buffer,
-		0,
-		0);
-
-	wl_surface_damage(
-		app.surface,
-		0,
-		0,
-		app.width,
-		app.height);
-
-	wl_surface_commit(app.surface);
-
-	while(app.running != 0)
-	{
-		if(wl_display_dispatch(app.display) == -1)
-			goto cleanup;
-	}
-	status = EXIT_SUCCESS;
-cleanup:
-	app_destroy(&app);
-	return (status);
+	return (exit_status);
 }

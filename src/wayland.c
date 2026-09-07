@@ -7,93 +7,105 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-static void wm_base_ping(void *data,struct xdg_wm_base *wm_base,uint32_t serial)
+static void on_wm_base_ping(void *data, struct xdg_wm_base *wm_base, uint32_t serial)
 {
 	(void)data;
 
-	xdg_wm_base_pong(wm_base,serial);
+	xdg_wm_base_pong(wm_base, serial);
 }
 
 static const struct xdg_wm_base_listener wm_base_listener = {
-	.ping = wm_base_ping,
+	.ping = on_wm_base_ping,
 };
 
-static void registry_global_remove(void *data,struct wl_registry *registry,uint32_t name)
+static void on_registry_global_remove(
+	void *data,
+	struct wl_registry *registry,
+	uint32_t global_id)
 {
 	(void)data;
 	(void)registry;
-	(void)name;
+	(void)global_id;
 }
 
-static void registry_global(void *data,struct wl_registry *registry,uint32_t name,const char *interface,uint32_t version)
+static void on_registry_global(
+	void *data,
+	struct wl_registry *registry,
+	uint32_t global_id,
+	const char *interface,
+	uint32_t server_version)
 {
-	struct app *app;
+	struct xway_app *app;
 	uint32_t bind_version;
 
 	app = data;
-	if(app->compositor == NULL && strcmp(interface, wl_compositor_interface.name) == 0)
+
+	if (app->compositor == NULL && strcmp(interface, wl_compositor_interface.name) == 0)
 	{
-		bind_version = version;
-		if(bind_version > (uint32_t)wl_compositor_interface.version)
+		bind_version = server_version;
+
+		if (bind_version > (uint32_t)wl_compositor_interface.version)
 			bind_version = (uint32_t)wl_compositor_interface.version;
 
-		app->compositor= wl_registry_bind(registry,name,&wl_compositor_interface,bind_version);
+		app->compositor = wl_registry_bind(
+			registry,
+			global_id,
+			&wl_compositor_interface,
+			bind_version);
 	}
-	if(app->shm == NULL &&
-	strcmp(interface, wl_shm_interface.name) == 0)
-{
-	bind_version = version;
 
-	if(bind_version > (uint32_t)wl_shm_interface.version)
-		bind_version = (uint32_t)wl_shm_interface.version;
-
-	app->shm = wl_registry_bind(
-		registry,
-		name,
-		&wl_shm_interface,
-		bind_version);
-}
-	if(app->wm_base == NULL && strcmp(interface, xdg_wm_base_interface.name) == 0 )
+	if (app->shm == NULL && strcmp(interface, wl_shm_interface.name) == 0)
 	{
-		bind_version = version;
+		bind_version = server_version;
 
-		if(bind_version > (uint32_t)xdg_wm_base_interface.version)
+		if (bind_version > (uint32_t)wl_shm_interface.version)
+			bind_version = (uint32_t)wl_shm_interface.version;
+
+		app->shm =
+			wl_registry_bind(registry, global_id, &wl_shm_interface, bind_version);
+	}
+
+	if (app->wm_base == NULL && strcmp(interface, xdg_wm_base_interface.name) == 0)
+	{
+		bind_version = server_version;
+
+		if (bind_version > (uint32_t)xdg_wm_base_interface.version)
 			bind_version = (uint32_t)xdg_wm_base_interface.version;
-		app->wm_base = wl_registry_bind(
-	registry,
-	name,
-	&xdg_wm_base_interface,
-	bind_version);
 
-if(app->wm_base != NULL)
-{
-	if(xdg_wm_base_add_listener(
-		app->wm_base,
-		&wm_base_listener,
-		app) == -1)
-	{
-		xdg_wm_base_destroy(app->wm_base);
-		app->wm_base = NULL;
-	}
-}
+		app->wm_base =
+			wl_registry_bind(registry, global_id, &xdg_wm_base_interface, bind_version);
+
+		if (app->wm_base != NULL)
+		{
+			if (xdg_wm_base_add_listener(app->wm_base, &wm_base_listener, app) == -1)
+			{
+				xdg_wm_base_destroy(app->wm_base);
+				app->wm_base = NULL;
+			}
+		}
 	}
 }
 
 static const struct wl_registry_listener registry_listener = {
-	.global = registry_global,
-	.global_remove = registry_global_remove,
+	.global = on_registry_global,
+	.global_remove = on_registry_global_remove,
 };
 
-static void xdg_surface_configure(void *data,struct xdg_surface *xdg_surface,uint32_t serial)
+static void on_xdg_surface_configure(
+	void *data,
+	struct xdg_surface *xdg_surface,
+	uint32_t serial)
 {
 	(void)data;
 
 	xdg_surface_ack_configure(xdg_surface, serial);
 }
+
 static const struct xdg_surface_listener xdg_surface_listener = {
-	.configure = xdg_surface_configure,
+	.configure = on_xdg_surface_configure,
 };
-static void xdg_toplevel_configure(
+
+static void on_toplevel_configure(
 	void *data,
 	struct xdg_toplevel *toplevel,
 	int32_t width,
@@ -106,18 +118,18 @@ static void xdg_toplevel_configure(
 	(void)height;
 	(void)states;
 }
-static void xdg_toplevel_close(
-	void *data,
-	struct xdg_toplevel *toplevel)
+
+static void on_toplevel_close(void *data, struct xdg_toplevel *toplevel)
 {
-	struct app *app;
+	struct xway_app *app;
 
 	(void)toplevel;
 
 	app = data;
 	app->running = 0;
 }
-static void xdg_toplevel_configure_bounds(
+
+static void on_toplevel_configure_bounds(
 	void *data,
 	struct xdg_toplevel *toplevel,
 	int32_t width,
@@ -129,7 +141,7 @@ static void xdg_toplevel_configure_bounds(
 	(void)height;
 }
 
-static void xdg_toplevel_wm_capabilities(
+static void on_toplevel_capabilities(
 	void *data,
 	struct xdg_toplevel *toplevel,
 	struct wl_array *capabilities)
@@ -139,23 +151,24 @@ static void xdg_toplevel_wm_capabilities(
 	(void)capabilities;
 }
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
-	.configure = xdg_toplevel_configure,
-	.close = xdg_toplevel_close,
-	.configure_bounds = xdg_toplevel_configure_bounds,
-	.wm_capabilities = xdg_toplevel_wm_capabilities,
+	.configure = on_toplevel_configure,
+	.close = on_toplevel_close,
+	.configure_bounds = on_toplevel_configure_bounds,
+	.wm_capabilities = on_toplevel_capabilities,
 };
-static int create_shm_file(size_t size)
+
+static int create_shm_file(size_t size_bytes)
 {
 	int fd;
 
 	fd = memfd_create("xway-buffer", MFD_CLOEXEC);
-	if(fd == -1)
+	if (fd == -1)
 	{
 		perror("xway-lib: memfd_create");
 		return (-1);
 	}
 
-	if(ftruncate(fd, (off_t)size) == -1)
+	if (ftruncate(fd, (off_t)size_bytes) == -1)
 	{
 		perror("xway-lib: ftruncate");
 		close(fd);
@@ -164,44 +177,42 @@ static int create_shm_file(size_t size)
 
 	return (fd);
 }
-int create_buffer(struct app *app)
+
+int xway_buffer_create(struct xway_app *app)
 {
 	struct wl_shm_pool *pool;
 	int fd;
-	int32_t size;
+	int32_t size_bytes;
 
-	if(app->width <= 0 || app->height <= 0)
+	if (app->width <= 0 || app->height <= 0)
 	{
 		fprintf(stderr, "xway-lib: invalid buffer dimensions\n");
 		return (-1);
 	}
-	if(app->width > INT32_MAX / 4)
+
+	if (app->width > INT32_MAX / 4)
 	{
 		fprintf(stderr, "xway-lib: buffer stride is too large\n");
 		return (-1);
 	}
-	app->stride = app->width * 4;
-	if(app->height > INT32_MAX / app->stride)
+
+	app->stride_bytes = app->width * 4;
+
+	if (app->height > INT32_MAX / app->stride_bytes)
 	{
 		fprintf(stderr, "xway-lib: buffer size is too large\n");
 		return (-1);
 	}
-	size = app->stride * app->height;
-	app->buffer_size = (size_t)size;
+	size_bytes = app->stride_bytes * app->height;
+	app->buffer_size_bytes = (size_t)size_bytes;
 
-	fd = create_shm_file(app->buffer_size);
-	if(fd == -1)
+	fd = create_shm_file(app->buffer_size_bytes);
+	if (fd == -1)
 		return (-1);
 
-	app->pixels = mmap(
-		NULL,
-		app->buffer_size,
-		PROT_READ | PROT_WRITE,
-		MAP_SHARED,
-		fd,
-		0);
-
-	if(app->pixels == MAP_FAILED)
+	app->pixels =
+		mmap(NULL, app->buffer_size_bytes, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (app->pixels == MAP_FAILED)
 	{
 		perror("xway-lib: mmap");
 		app->pixels = NULL;
@@ -209,15 +220,11 @@ int create_buffer(struct app *app)
 		return (-1);
 	}
 
-	pool = wl_shm_create_pool(
-		app->shm,
-		fd,
-		size);
-
-	if(pool == NULL)
+	pool = wl_shm_create_pool(app->shm, fd, size_bytes);
+	if (pool == NULL)
 	{
-		fprintf(stderr,"xway-lib: failed to create wl_shm_pool\n");
-		munmap(app->pixels, app->buffer_size);
+		fprintf(stderr, "xway-lib: failed to create wl_shm_pool\n");
+		munmap(app->pixels, app->buffer_size_bytes);
 		app->pixels = NULL;
 		close(fd);
 		return (-1);
@@ -228,16 +235,16 @@ int create_buffer(struct app *app)
 		0,
 		app->width,
 		app->height,
-		app->stride,
+		app->stride_bytes,
 		WL_SHM_FORMAT_XRGB8888);
 
 	wl_shm_pool_destroy(pool);
 	close(fd);
 
-	if(app->buffer == NULL)
+	if (app->buffer == NULL)
 	{
-		fprintf(stderr,"xway-lib: failed to create wl_buffer\n");
-		munmap(app->pixels, app->buffer_size);
+		fprintf(stderr, "xway-lib: failed to create wl_buffer\n");
+		munmap(app->pixels, app->buffer_size_bytes);
 		app->pixels = NULL;
 		return (-1);
 	}
@@ -245,57 +252,46 @@ int create_buffer(struct app *app)
 	return (0);
 }
 
-int wayland_init(struct app *app)
+int xway_app_init(struct xway_app *app)
 {
 	app->display = wl_display_connect(NULL);
-	if(app->display == NULL)
+	if (app->display == NULL)
 		return (-1);
+
 	app->registry = wl_display_get_registry(app->display);
-	if(app->registry == NULL)
-		return (-1);
-	if(wl_registry_add_listener(
-		app->registry,
-		&registry_listener,
-		app) == -1)
+	if (app->registry == NULL)
 		return (-1);
 
-	if(wl_display_roundtrip(app->display) == -1)
+	if (wl_registry_add_listener(app->registry, &registry_listener, app) == -1)
 		return (-1);
 
-	if(app->compositor == NULL
-		|| app->wm_base == NULL
-		|| app->shm == NULL)
+	if (wl_display_roundtrip(app->display) == -1)
+		return (-1);
+
+	if (app->compositor == NULL || app->wm_base == NULL || app->shm == NULL)
 		return (-1);
 
 	return (0);
 }
 
-int window_create(struct app *app)
+int xway_window_create(struct xway_app *app)
 {
 	app->surface = wl_compositor_create_surface(app->compositor);
-	if(app->surface == NULL)
-		return (-1);
-	app->xdg_surface = xdg_wm_base_get_xdg_surface(
-		app->wm_base,
-		app->surface);
-
-	if(app->xdg_surface == NULL)
+	if (app->surface == NULL)
 		return (-1);
 
-	if(xdg_surface_add_listener(
-		app->xdg_surface,
-		&xdg_surface_listener,
-		app) == -1)
+	app->xdg_surface = xdg_wm_base_get_xdg_surface(app->wm_base, app->surface);
+	if (app->xdg_surface == NULL)
+		return (-1);
+
+	if (xdg_surface_add_listener(app->xdg_surface, &xdg_surface_listener, app) == -1)
 		return (-1);
 
 	app->toplevel = xdg_surface_get_toplevel(app->xdg_surface);
-	if(app->toplevel == NULL)
+	if (app->toplevel == NULL)
 		return (-1);
 
-	if(xdg_toplevel_add_listener(
-		app->toplevel,
-		&xdg_toplevel_listener,
-		app) == -1)
+	if (xdg_toplevel_add_listener(app->toplevel, &xdg_toplevel_listener, app) == -1)
 		return (-1);
 
 	xdg_toplevel_set_title(app->toplevel, "Xway-lib");
@@ -305,34 +301,38 @@ int window_create(struct app *app)
 
 	wl_surface_commit(app->surface);
 
-	if(wl_display_roundtrip(app->display) == -1)
+	if (wl_display_roundtrip(app->display) == -1)
 		return (-1);
 
 	return (0);
 }
 
-void app_destroy(struct app *app)
+void xway_app_cleanup(struct xway_app *app)
 {
-	if(app == NULL)
-		return ;
-	if(app->buffer != NULL)
+	if (app == NULL)
+		return;
+
+	if (app->buffer != NULL)
 		wl_buffer_destroy(app->buffer);
-	if(app->pixels)
-		munmap(app->pixels,app->buffer_size);
-	if(app->toplevel != NULL)
+	if (app->pixels)
+		munmap(app->pixels, app->buffer_size_bytes);
+
+	if (app->toplevel != NULL)
 		xdg_toplevel_destroy(app->toplevel);
-	if(app->xdg_surface != NULL)
+	if (app->xdg_surface != NULL)
 		xdg_surface_destroy(app->xdg_surface);
-	if(app->surface != NULL)
+	if (app->surface != NULL)
 		wl_surface_destroy(app->surface);
-	if(app->wm_base != NULL)
+
+	if (app->wm_base != NULL)
 		xdg_wm_base_destroy(app->wm_base);
-	if(app->shm != NULL)
+	if (app->shm != NULL)
 		wl_shm_destroy(app->shm);
-	if(app->compositor != NULL)
+	if (app->compositor != NULL)
 		wl_compositor_destroy(app->compositor);
-	if(app->registry != NULL)
+
+	if (app->registry != NULL)
 		wl_registry_destroy(app->registry);
-	if(app->display != NULL )
+	if (app->display != NULL)
 		wl_display_disconnect(app->display);
 }
