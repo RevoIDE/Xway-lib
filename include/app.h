@@ -7,7 +7,7 @@
 
 #include "xdg-shell-client-protocol.h"
 
-struct xway_app
+struct s_xway_app
 {
 	struct wl_display *display;
 	struct wl_registry *registry;
@@ -30,9 +30,11 @@ struct xway_app
 	int running;
 };
 
-int xway_app_init(struct xway_app *app);
-int xway_window_create(struct xway_app *app);
-int xway_buffer_create(struct xway_app *app);
-void xway_app_cleanup(struct xway_app *app);
+typedef struct s_xway_app t_xway_app;
+
+int xway_app_init(t_xway_app *app);
+int xway_window_create(t_xway_app *app);
+int xway_buffer_create(t_xway_app *app);
+void xway_app_cleanup(t_xway_app *app);
 
 #endif

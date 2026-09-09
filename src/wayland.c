@@ -35,7 +35,7 @@ static void on_registry_global(
 	const char *interface,
 	uint32_t server_version)
 {
-	struct xway_app *app;
+	t_xway_app *app;
 	uint32_t bind_version;
 
 	app = data;
@@ -121,7 +121,7 @@ static void on_toplevel_configure(
 
 static void on_toplevel_close(void *data, struct xdg_toplevel *toplevel)
 {
-	struct xway_app *app;
+	t_xway_app *app;
 
 	(void)toplevel;
 
@@ -178,7 +178,7 @@ static int create_shm_file(size_t size_bytes)
 	return (fd);
 }
 
-int xway_buffer_create(struct xway_app *app)
+int xway_buffer_create(t_xway_app *app)
 {
 	struct wl_shm_pool *pool;
 	int fd;
@@ -252,7 +252,7 @@ int xway_buffer_create(struct xway_app *app)
 	return (0);
 }
 
-int xway_app_init(struct xway_app *app)
+int xway_app_init(t_xway_app *app)
 {
 	app->display = wl_display_connect(NULL);
 	if (app->display == NULL)
@@ -274,7 +274,7 @@ int xway_app_init(struct xway_app *app)
 	return (0);
 }
 
-int xway_window_create(struct xway_app *app)
+int xway_window_create(t_xway_app *app)
 {
 	app->surface = wl_compositor_create_surface(app->compositor);
 	if (app->surface == NULL)
@@ -307,7 +307,7 @@ int xway_window_create(struct xway_app *app)
 	return (0);
 }
 
-void xway_app_cleanup(struct xway_app *app)
+void xway_app_cleanup(t_xway_app *app)
 {
 	if (app == NULL)
 		return;

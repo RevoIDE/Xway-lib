@@ -12,7 +12,7 @@
 #include <string.h>
 #include "app.h"
 
-static void draw_frame(struct xway_app *app)
+static void draw_frame(t_xway_app *app)
 {
 	int32_t x;
 	int32_t y;
@@ -36,7 +36,7 @@ static void draw_frame(struct xway_app *app)
 	}
 }
 
-static int run_app(struct xway_app *app)
+static int run_app(t_xway_app *app)
 {
 	if (xway_app_init(app) == -1)
 		return (EXIT_FAILURE);
@@ -64,7 +64,7 @@ static int run_app(struct xway_app *app)
 
 int main(void)
 {
-	struct xway_app app = {0};
+	t_xway_app app = {0};
 	int exit_status;
 
 	app.width = 800;
