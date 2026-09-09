@@ -6,10 +6,33 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_package(PkgConfig REQUIRED)
+find_program(WAYLAND_SCANNER wayland-scanner REQUIRED)
+
+pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+
+set(XDG_SHELL_XML
+    "${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml"
+)
+
+set(XDG_SHELL_C
+    "${CMAKE_CURRENT_BINARY_DIR}/xdg-shell-protocol.c"
+)
+
+add_custom_command(
+    OUTPUT "${XDG_SHELL_C}"
+    COMMAND "${WAYLAND_SCANNER}" private-code
+            "${XDG_SHELL_XML}" "${XDG_SHELL_C}"
+    DEPENDS "${XDG_SHELL_XML}"
+    COMMENT "Generation de xdg-shell-protocol.c"
+    VERBATIM
+)
+
 add_library(xway STATIC
 	src/xway.c
 	src/wayland.c
-	src/xdg-shell-protocol.c
+	"${XDG_SHELL_C}"
 )
 
 add_executable(xway-main src/main.c)
@@ -20,7 +43,6 @@ target_include_directories(xway PUBLIC
 	include
 )
 
-find_package(PkgConfig REQUIRED)
 pkg_check_modules(WAYLAND REQUIRED wayland-client)
 
 target_include_directories(xway PRIVATE
