@@ -38,20 +38,10 @@ static void draw_frame(t_xway_app *app)
 
 static int run_app(t_xway_app *app)
 {
-	if (xway_app_init(app) == -1)
-		return (EXIT_FAILURE);
-
-	if (xway_window_create(app) == -1)
-		return (EXIT_FAILURE);
-
-	if (xway_buffer_create(app) == -1)
-		return (EXIT_FAILURE);
-
 	draw_frame(app);
 
-	wl_surface_attach(app->surface, app->buffer, 0, 0);
-	wl_surface_damage(app->surface, 0, 0, app->width, app->height);
-	wl_surface_commit(app->surface);
+	if (xway_present(app) == -1)
+		return (EXIT_FAILURE);
 
 	while (app->running != 0)
 	{
@@ -64,15 +54,16 @@ static int run_app(t_xway_app *app)
 
 int main(void)
 {
-	t_xway_app app = {0};
+	t_xway_app *app;
 	int exit_status;
 
-	app.width = 800;
-	app.height = 600;
+	app = xway_create(800, 600, "Ma fenêtre");
+	if (!app)
+		return (EXIT_FAILURE);
 
-	exit_status = run_app(&app);
+	exit_status = run_app(app);
 
-	xway_app_cleanup(&app);
+	xway_destroy(app);
 
 	return (exit_status);
 }

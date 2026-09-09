@@ -1,13 +1,15 @@
 #ifndef APP_H
 #define APP_H
 
+#include "xway.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <wayland-client.h>
 
 #include "xdg-shell-client-protocol.h"
 
-struct s_xway_app
+typedef struct s_xway_app
 {
 	struct wl_display *display;
 	struct wl_registry *registry;
@@ -28,9 +30,7 @@ struct s_xway_app
 	int32_t stride_bytes;
 
 	int running;
-};
-
-typedef struct s_xway_app t_xway_app;
+}t_xway_app;
 
 int xway_app_init(t_xway_app *app);
 int xway_window_create(t_xway_app *app);
