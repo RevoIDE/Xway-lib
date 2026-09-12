@@ -3,31 +3,56 @@ cmake_minimum_required(VERSION 3.20)
 project(xway-lib C)
 
 set(CMAKE_C_STANDARD 11)
-
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
-	src/*.c
-	include/*.h
+find_package(PkgConfig REQUIRED)
+find_program(WAYLAND_SCANNER wayland-scanner REQUIRED)
+
+pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+
+set(XDG_SHELL_XML
+    "${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml"
 )
 
-add_executable(xway-lib ${SOURCES})
+set(XDG_SHELL_C
+    "${CMAKE_CURRENT_BINARY_DIR}/xdg-shell-protocol.c"
+)
 
-target_include_directories(xway-lib PRIVATE
+add_custom_command(
+    OUTPUT "${XDG_SHELL_C}"
+    COMMAND "${WAYLAND_SCANNER}" private-code
+            "${XDG_SHELL_XML}" "${XDG_SHELL_C}"
+    DEPENDS "${XDG_SHELL_XML}"
+    COMMENT "Generation de xdg-shell-protocol.c"
+    VERBATIM
+)
+
+add_library(xway STATIC
+	src/xway.c
+	src/wayland.c
+	"${XDG_SHELL_C}"
+)
+
+add_executable(xway-main src/main.c)
+
+target_link_libraries(xway-main PRIVATE xway)
+
+target_include_directories(xway PUBLIC
 	include
 )
 
-find_package(PkgConfig REQUIRED)
 pkg_check_modules(WAYLAND REQUIRED wayland-client)
 
-target_include_directories(xway-lib PRIVATE
+target_include_directories(xway PRIVATE
     ${WAYLAND_INCLUDE_DIRS}
 )
 
-target_link_libraries(xway-lib PRIVATE
+target_link_libraries(xway PRIVATE
     ${WAYLAND_LIBRARIES}
 )
 
-target_compile_options(xway-lib PRIVATE
+target_compile_options(xway PRIVATE
     ${WAYLAND_CFLAGS_OTHER}
 )
