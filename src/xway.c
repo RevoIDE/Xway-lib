@@ -1,7 +1,10 @@
 #include "xway.h"
 #include "app.h"
+#include "types.h"
 #include "xdg-shell-client-protocol.h"
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 
@@ -92,4 +95,27 @@ int	xway_wait_events(t_xway_app *app)
 int	xway_dispatch(t_xway_app *app)
 {
 	return (wl_display_dispatch(app->display));
+}
+
+void	xway_blit(t_xway_app *app, uint32_t *pixels)
+{
+	uint8_t *dst_row;
+	uint8_t *src_row;
+
+	int32_t y;
+
+	if (!app || !app->pixels || !pixels)
+		return;
+
+	y = 0;
+
+	while (y < app->height)
+	{
+		dst_row = (uint8_t *) app->pixels 	+ (size_t) y * (size_t) app->stride_bytes;
+		src_row = (uint8_t *) pixels 		+ (size_t) y * (size_t) app->width * sizeof(uint32_t);
+
+		memcpy(dst_row, src_row, (size_t)app->width * sizeof(uint32_t));
+
+		y++;
+	}
 }

@@ -24,4 +24,6 @@ int xway_is_running(const t_xway_app *app);
 int xway_wait_events(t_xway_app *app);
 int xway_get_frame(t_xway_app *app, t_xway_frame *frame);
 
+void	xway_blit(t_xway_app *app, uint32_t *pixels);
+
 #endif
