@@ -62,7 +62,7 @@ int main(void)
 		return (EXIT_FAILURE);
 
 	exit_status = run_app(app);
-
+	
 	xway_destroy(app);
 
 	return (exit_status);

@@ -29,6 +29,11 @@ typedef struct s_xway_app
 	int32_t	height;
 	int32_t	stride_bytes;
 
+	struct wl_seat *seat;
+	uint32_t seat_global_id;
+	int has_keyboard;
+	int has_pointer;
+
 	int	running;
 }	t_xway_app;
 

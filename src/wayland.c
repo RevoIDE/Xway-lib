@@ -1,4 +1,6 @@
 #define _GNU_SOURCE
+#include <wayland-client-protocol.h>
+
 #include "xway.h"
 
 #include "app.h"
@@ -19,14 +21,64 @@ static const struct xdg_wm_base_listener wm_base_listener = {
 	.ping = on_wm_base_ping,
 };
 
+static void seat_cleanup(t_xway_app *app)
+{
+	if(app->seat)
+	{
+		if(wl_seat_get_version(app->seat) >= WL_SEAT_RELEASE_SINCE_VERSION)
+			wl_seat_release(app->seat);
+		else
+			wl_seat_destroy(app->seat);
+	}
+	app->seat = NULL;
+	app->seat_global_id = 0;
+	app->has_keyboard = 0;
+	app->has_pointer = 0;
+}
+static void on_seat_capabilities(
+		void *data,
+		struct wl_seat *seat,
+		uint32_t capabilities
+		)
+{
+	t_xway_app *app;
+
+	(void)seat;
+
+	app = data;
+
+	app->has_keyboard = 
+		(capabilities & WL_SEAT_CAPABILITY_KEYBOARD) != 0;
+	app->has_pointer =
+		(capabilities & WL_SEAT_CAPABILITY_POINTER) != 0;
+	fprintf(stderr, "xway-lib:  keyboard=%d pointer=%d\n", app->has_keyboard, app->has_pointer );
+
+}
+static void on_seat_name(void *data,struct wl_seat *seat,const char *name)
+{
+	(void)data;
+	(void)seat;
+
+	fprintf(stderr, "xway-lib: seat=%s\n", name);
+}
+
+static const struct wl_seat_listener seat_listener = {
+	.capabilities = on_seat_capabilities,
+	.name = on_seat_name,
+};
+
 static void on_registry_global_remove(
 	void *data,
 	struct wl_registry *registry,
 	uint32_t global_id)
 {
-	(void)data;
+	t_xway_app *app;
+
 	(void)registry;
-	(void)global_id;
+
+	app = data;
+	if(app->seat && app->seat_global_id == global_id)
+		seat_cleanup(app);
 }
 
 static void on_registry_global(
@@ -85,6 +137,30 @@ static void on_registry_global(
 			}
 		}
 	}
+	if(!app->seat && strcmp(interface, wl_seat_interface.name) == 0)
+	{
+		bind_version = server_version;
+
+		if(bind_version > 5)
+			bind_version = 5;
+		app->seat = wl_registry_bind(
+				registry,
+				global_id,
+				&wl_seat_interface,
+				bind_version);
+		if(!app->seat)
+		{
+			fprintf(stderr,"xway-lib: failed to bind wl_seat\n");
+			return ;
+		}
+		app->seat_global_id = global_id;
+
+		if(wl_seat_add_listener(app->seat, &seat_listener,app) == -1)
+		{
+			fprintf(stderr, "xway-lib: failed to add seat listener\n");
+			seat_cleanup(app);
+		}
+	}	
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -312,7 +388,8 @@ void xway_app_cleanup(t_xway_app *app)
 {
 	if (!app)
 		return;
-
+	seat_cleanup(app);
+	
 	if (app->buffer)
 		wl_buffer_destroy(app->buffer);
 	if (app->pixels)
