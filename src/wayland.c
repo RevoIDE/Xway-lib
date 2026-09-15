@@ -21,52 +21,6 @@ static const struct xdg_wm_base_listener wm_base_listener = {
 	.ping = on_wm_base_ping,
 };
 
-static void seat_cleanup(t_xway_app *app)
-{
-	if(app->seat)
-	{
-		if(wl_seat_get_version(app->seat) >= WL_SEAT_RELEASE_SINCE_VERSION)
-			wl_seat_release(app->seat);
-		else
-			wl_seat_destroy(app->seat);
-	}
-	app->seat = NULL;
-	app->seat_global_id = 0;
-	app->has_keyboard = 0;
-	app->has_pointer = 0;
-}
-static void on_seat_capabilities(
-		void *data,
-		struct wl_seat *seat,
-		uint32_t capabilities
-		)
-{
-	t_xway_app *app;
-
-	(void)seat;
-
-	app = data;
-
-	app->has_keyboard = 
-		(capabilities & WL_SEAT_CAPABILITY_KEYBOARD) != 0;
-	app->has_pointer =
-		(capabilities & WL_SEAT_CAPABILITY_POINTER) != 0;
-	fprintf(stderr, "xway-lib:  keyboard=%d pointer=%d\n", app->has_keyboard, app->has_pointer );
-
-}
-static void on_seat_name(void *data,struct wl_seat *seat,const char *name)
-{
-	(void)data;
-	(void)seat;
-
-	fprintf(stderr, "xway-lib: seat=%s\n", name);
-}
-
-static const struct wl_seat_listener seat_listener = {
-	.capabilities = on_seat_capabilities,
-	.name = on_seat_name,
-};
-
 static void on_registry_global_remove(
 	void *data,
 	struct wl_registry *registry,
@@ -78,7 +32,7 @@ static void on_registry_global_remove(
 
 	app = data;
 	if(app->seat && app->seat_global_id == global_id)
-		seat_cleanup(app);
+		xway_seat_cleanup(app);
 }
 
 static void on_registry_global(
@@ -139,28 +93,9 @@ static void on_registry_global(
 	}
 	if(!app->seat && strcmp(interface, wl_seat_interface.name) == 0)
 	{
-		bind_version = server_version;
-
-		if(bind_version > 5)
-			bind_version = 5;
-		app->seat = wl_registry_bind(
-				registry,
-				global_id,
-				&wl_seat_interface,
-				bind_version);
-		if(!app->seat)
-		{
-			fprintf(stderr,"xway-lib: failed to bind wl_seat\n");
-			return ;
-		}
-		app->seat_global_id = global_id;
-
-		if(wl_seat_add_listener(app->seat, &seat_listener,app) == -1)
-		{
-			fprintf(stderr, "xway-lib: failed to add seat listener\n");
-			seat_cleanup(app);
-		}
-	}	
+		if(xway_seat_bind(app,global_id,server_version) == -1)	
+			return;
+	}
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -234,101 +169,6 @@ static const struct xdg_toplevel_listener xdg_toplevel_listener = {
 	.wm_capabilities = on_toplevel_capabilities,
 };
 
-static int create_shm_file(size_t size_bytes)
-{
-	int fd;
-
-	fd = memfd_create("xway-buffer", MFD_CLOEXEC);
-	if (fd == -1)
-	{
-		perror("xway-lib: memfd_create");
-		return (-1);
-	}
-
-	if (ftruncate(fd, (off_t)size_bytes) == -1)
-	{
-		perror("xway-lib: ftruncate");
-		close(fd);
-		return (-1);
-	}
-
-	return (fd);
-}
-
-int xway_buffer_create(t_xway_app *app)
-{
-	struct wl_shm_pool *pool;
-	int fd;
-	int32_t size_bytes;
-
-	if (app->width <= 0 || app->height <= 0)
-	{
-		fprintf(stderr, "xway-lib: invalid buffer dimensions\n");
-		return (-1);
-	}
-
-	if (app->width > INT32_MAX / 4)
-	{
-		fprintf(stderr, "xway-lib: buffer stride is too large\n");
-		return (-1);
-	}
-
-	app->stride_bytes = app->width * 4;
-
-	if (app->height > INT32_MAX / app->stride_bytes)
-	{
-		fprintf(stderr, "xway-lib: buffer size is too large\n");
-		return (-1);
-	}
-	size_bytes = app->stride_bytes * app->height;
-	app->buffer_size_bytes = (size_t)size_bytes;
-
-	fd = create_shm_file(app->buffer_size_bytes);
-	if (fd == -1)
-		return (-1);
-
-	app->pixels =
-		mmap(NULL, app->buffer_size_bytes, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (app->pixels == MAP_FAILED)
-	{
-		perror("xway-lib: mmap");
-		app->pixels = NULL;
-		close(fd);
-		return (-1);
-	}
-
-	pool = wl_shm_create_pool(app->shm, fd, size_bytes);
-	if (!pool)
-	{
-		fprintf(stderr, "xway-lib: failed to create wl_shm_pool\n");
-		munmap(app->pixels, app->buffer_size_bytes);
-		app->pixels = NULL;
-		close(fd);
-		return (-1);
-	}
-
-	app->buffer = wl_shm_pool_create_buffer(
-		pool,
-		0,
-		app->width,
-		app->height,
-		app->stride_bytes,
-		WL_SHM_FORMAT_XRGB8888);
-
-	wl_shm_pool_destroy(pool);
-	close(fd);
-
-	if (!app->buffer)
-	{
-		fprintf(stderr, "xway-lib: failed to create wl_buffer\n");
-		munmap(app->pixels, app->buffer_size_bytes);
-		app->pixels = NULL;
-		return (-1);
-	}
-
-	return (0);
-}
-
 int xway_app_init(t_xway_app *app)
 {
 	app->display = wl_display_connect(NULL);
@@ -388,7 +228,7 @@ void xway_app_cleanup(t_xway_app *app)
 {
 	if (!app)
 		return;
-	seat_cleanup(app);
+	xway_seat_cleanup(app);
 	
 	if (app->buffer)
 		wl_buffer_destroy(app->buffer);

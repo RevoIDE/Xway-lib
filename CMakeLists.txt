@@ -32,6 +32,7 @@ add_custom_command(
 add_library(xway STATIC
 	src/xway.c
 	src/wayland.c
+	src/input/seat.c
 	"${XDG_SHELL_C}"
 )
 
