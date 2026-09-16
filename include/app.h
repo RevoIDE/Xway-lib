@@ -49,4 +49,5 @@ void xway_seat_cleanup(t_xway_app *app);
 
 void xway_buffer_cleanup(t_xway_app *app);
 
+void xway_window_cleanup(t_xway_app *app);
 #endif

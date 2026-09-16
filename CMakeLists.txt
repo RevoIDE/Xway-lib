@@ -29,13 +29,18 @@ add_custom_command(
     VERBATIM
 )
 
-add_library(xway STATIC
-	src/xway.c
-	src/buffer.c
-	src/wayland.c
-	src/input/seat.c
-	"${XDG_SHELL_C}"
-)
+  file(GLOB_RECURSE XWAY_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+  )
+
+  list(REMOVE_ITEM XWAY_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
+  )
+
+  add_library(xway STATIC
+        ${XWAY_SOURCES}
+        "${XDG_SHELL_C}"
+  )
 
 add_executable(xway-main src/main.c)
 
