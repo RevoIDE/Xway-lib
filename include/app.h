@@ -9,6 +9,8 @@
 
 #include "xdg-shell-client-protocol.h"
 
+#include <xkbcommon/xkbcommon.h>
+
 typedef struct s_xway_app
 {
 	struct wl_display		*display;
@@ -30,12 +32,19 @@ typedef struct s_xway_app
 	int32_t	stride_bytes;
 
 	struct wl_seat *seat;
+	struct wl_keyboard *keyboard;
+
+	struct xkb_context *xkb_context;
+	struct xkb_keymap *xkb_keymap;
+	struct xkb_state *xkb_state;
+
 	uint32_t seat_global_id;
 	int has_keyboard;
 	int has_pointer;
 
 	int	running;
 }	t_xway_app;
+
 
 int	xway_app_init		(t_xway_app *app);
 int	xway_window_create	(t_xway_app *app);
@@ -50,4 +59,10 @@ void xway_seat_cleanup(t_xway_app *app);
 void xway_buffer_cleanup(t_xway_app *app);
 
 void xway_window_cleanup(t_xway_app *app);
+
+int xway_keyboard_create(t_xway_app *app);
+
+void xway_keyboard_cleanup(t_xway_app *app);
+
+
 #endif

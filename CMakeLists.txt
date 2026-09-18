@@ -10,6 +10,7 @@ find_package(PkgConfig REQUIRED)
 find_program(WAYLAND_SCANNER wayland-scanner REQUIRED)
 
 pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+pkg_check_modules(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 
 set(XDG_SHELL_XML
@@ -63,3 +64,4 @@ target_link_libraries(xway PRIVATE
 target_compile_options(xway PRIVATE
     ${WAYLAND_CFLAGS_OTHER}
 )
+target_link_libraries(xway PRIVATE PkgConfig::XKBCOMMON)
