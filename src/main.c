@@ -1,3 +1,4 @@
+#include "xway.h"
 #define _GNU_SOURCE
 
 #include <stddef.h>
@@ -12,6 +13,28 @@
 #include <string.h>
 #include "app.h"
 
+static void check_keyboard(t_xway_app *app)
+{
+	static int previous_state[XWAY_KEY_COUNT];
+	t_xway_key key;
+	int current_state;
+
+	key = XWAY_KEY_UNKNOWN + 1;
+	while (key < XWAY_KEY_COUNT) 
+	{
+		current_state = xway_key_down(app, key);
+		if(current_state  != previous_state[key])
+		{
+			if(current_state)
+				fprintf(stderr, "xway-lib: key %s pressed\n", xway_key_name(key));
+			else
+				fprintf(stderr, "xway-lib: key %s released\n", xway_key_name(key));
+			previous_state[key] = current_state;
+		}
+		key++;
+	}
+}
+	
 static void draw_frame(t_xway_app *app)
 {
 	int32_t x;
@@ -47,6 +70,7 @@ static int run_app(t_xway_app *app)
 	{
 		if (wl_display_dispatch(app->display) == -1)
 			return (EXIT_FAILURE);
+		check_keyboard(app);
 	}
 
 	return (EXIT_SUCCESS);

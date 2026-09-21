@@ -7,7 +7,18 @@
 #include <string.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
+#define X(name) [name] = #name,
 
+static const char *g_xway_key_names[XWAY_KEY_COUNT] = 
+{
+	#include "xway_keys.def"
+};
+const char *xway_key_name(t_xway_key key)
+{
+	if(key < XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
+		return ("XWAY_KEY_UNKNOWN");
+	return (g_xway_key_names[key]);
+}
 void	xway_destroy(t_xway_app *app)
 {
 	if(!app)
@@ -16,7 +27,16 @@ void	xway_destroy(t_xway_app *app)
 	xway_app_cleanup(app);
 	free(app);
 }
-
+int xway_key_down(const t_xway_app  *app, t_xway_key key)
+{
+	if(!app)
+		return (0);
+	if(!app->keyboard_focused)
+		return (0);
+	if(key <= XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
+		return (0);
+	return (app->keys_down[key] != 0);
+}
 t_xway_app	*xway_create(int width, int height, const char *title)
 {
 	t_xway_app *app;
