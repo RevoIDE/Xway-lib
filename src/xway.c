@@ -2,23 +2,29 @@
 #include "app.h"
 #include "types.h"
 #include "xdg-shell-client-protocol.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
+
 #define X(name) [name] = #name,
 
 static const char *g_xway_key_names[XWAY_KEY_COUNT] = 
 {
 	#include "xway_keys.def"
 };
-const char *xway_key_name(t_xway_key key)
+
+#undef X
+
+const char	*xway_key_name(t_xway_key key)
 {
 	if(key < XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
 		return ("XWAY_KEY_UNKNOWN");
 	return (g_xway_key_names[key]);
 }
+
 void	xway_destroy(t_xway_app *app)
 {
 	if(!app)
@@ -27,12 +33,15 @@ void	xway_destroy(t_xway_app *app)
 	xway_app_cleanup(app);
 	free(app);
 }
+
 int xway_key_down(const t_xway_app  *app, t_xway_key key)
 {
 	if(!app)
 		return (0);
+
 	if(!app->keyboard_focused)
 		return (0);
+
 	if(key <= XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
 		return (0);
 	return (app->keys_down[key] != 0);
@@ -45,7 +54,6 @@ t_xway_app	*xway_create(int width, int height, const char *title)
 		return (NULL);
 
 	app = calloc(1, sizeof(*app));
-
 	if (!app)
 		return (NULL);
 
@@ -84,7 +92,7 @@ int	xway_present(t_xway_app *app)
 		return (-1);
 
 	wl_surface_attach(app->surface, app->buffer, 0,0);
-	wl_surface_damage(app->surface, 0, 0, app->width, app->height);
+	wl_surface_damage(app->surface, 0, 0,app->width, app->height);
 	wl_surface_commit(app->surface);
 
 	return (0);
@@ -128,11 +136,12 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels)
 		return;
 
 	y = 0;
-
 	while (y < app->height)
 	{
-		dst_row = (uint8_t *) app->pixels 	+ (size_t) y * (size_t) app->stride_bytes;
-		src_row = (uint8_t *) pixels 		+ (size_t) y * (size_t) app->width * sizeof(uint32_t);
+		dst_row = (uint8_t *) app->pixels	
+				+ (size_t) y * (size_t) app->stride_bytes;
+		src_row = (uint8_t *) pixels
+				+ (size_t) y * (size_t)app->width * sizeof(uint32_t);
 
 		memcpy(dst_row, src_row, (size_t)app->width * sizeof(uint32_t));
 

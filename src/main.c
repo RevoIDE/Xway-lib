@@ -1,17 +1,12 @@
-#include "xway.h"
 #define _GNU_SOURCE
 
-#include <stddef.h>
+#include "xway.h"
+#include "app.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/mman.h>
-#include <unistd.h>
 #include <wayland-client-core.h>
-#include <wayland-client-protocol.h>
-#include <wayland-client.h>
-#include <string.h>
-#include "app.h"
 
 static void check_keyboard(t_xway_app *app)
 {
@@ -45,7 +40,8 @@ static void draw_frame(t_xway_app *app)
 	y = 0;
 	while (y < app->height)
 	{
-		row_start = (uint8_t *)app->pixels + (size_t)y * (size_t)app->stride_bytes;
+		row_start = (uint8_t *)app->pixels 
+			+ (size_t)y * (size_t)app->stride_bytes;
 		row = (uint32_t *)row_start;
 
 		x = 0;
@@ -54,7 +50,6 @@ static void draw_frame(t_xway_app *app)
 			row[x] = 0x00FFFFFF;
 			x++;
 		}
-
 		y++;
 	}
 }
@@ -78,8 +73,8 @@ static int run_app(t_xway_app *app)
 
 int main(void)
 {
-	t_xway_app *app;
-	int exit_status;
+	t_xway_app	*app;
+	int			exit_status;
 
 	app = xway_create(800, 600, "Ma fenêtre");
 	if (!app)
