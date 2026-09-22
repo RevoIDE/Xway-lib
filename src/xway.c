@@ -11,7 +11,7 @@
 
 #define X(name) [name] = #name,
 
-static const char *g_xway_key_names[XWAY_KEY_COUNT] = 
+static const char *g_xway_key_names[XWAY_KEY_COUNT] =
 {
 	#include "xway_keys.def"
 };
@@ -83,12 +83,80 @@ t_xway_app	*xway_create(int width, int height, const char *title)
 	return app;
 }
 
+static void on_frame_done(void *data, struct wl_callback *callback, uint32_t callback_data)
+{
+	t_xway_app *app;
+
+	(void)callback_data;
+
+	app = data;
+	wl_callback_destroy(callback);
+	app->frame_callback = NULL;
+	app->frame_ready = 1;
+}
+
+static const struct wl_callback_listener frame_listener = {
+	.done = on_frame_done,
+};
+
+int xway_request_frame(t_xway_app *app)
+{
+	if (!app || !app->surface)
+		return (-1);
+
+	if (app->frame_callback)
+		return (0);
+
+	app->frame_callback = wl_surface_frame(app->surface);
+	if (!app->frame_callback)
+		return (-1);
+
+	if (wl_callback_add_listener(app->frame_callback, &frame_listener, app) == -1)
+	{
+		wl_callback_destroy(app->frame_callback);
+		app->frame_callback = NULL;
+		return (-1);
+	}
+
+	app->frame_ready = 0;
+
+	return (0);
+}
+
+int xway_frame_ready(const t_xway_app *app)
+{
+	if (!app)
+		return (0);
+
+	return (app->frame_ready != 0);
+}
+
+int xway_wait_frame(t_xway_app *app)
+{
+	if (!app || !app->display)
+		return (-1);
+
+	while (app->running != 0 && app->frame_ready == 0)
+	{
+		if (wl_display_dispatch(app->display) == -1)
+		{
+			app->running = 0;
+			return (-1);
+		}
+	}
+
+	return (0);
+}
+
 int	xway_present(t_xway_app *app)
 {
 	if (!app)
 		return (-1);
 
 	if (!app->surface || !app->buffer)
+		return (-1);
+
+	if (xway_request_frame(app) == -1)
 		return (-1);
 
 	wl_surface_attach(app->surface, app->buffer, 0,0);
@@ -138,7 +206,7 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels)
 	y = 0;
 	while (y < app->height)
 	{
-		dst_row = (uint8_t *) app->pixels	
+		dst_row = (uint8_t *) app->pixels
 				+ (size_t) y * (size_t) app->stride_bytes;
 		src_row = (uint8_t *) pixels
 				+ (size_t) y * (size_t)app->width * sizeof(uint32_t);

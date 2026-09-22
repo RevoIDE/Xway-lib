@@ -106,6 +106,10 @@ void xway_window_cleanup(t_xway_app *app)
 {
 	if(!app)
 		return ;
+	if(app->frame_callback)
+		wl_callback_destroy(app->frame_callback);
+	app->frame_callback = NULL;
+	app->frame_ready = 0;
 	if(app->toplevel)
 		xdg_toplevel_destroy(app->toplevel);
 	if(app->xdg_surface)

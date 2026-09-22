@@ -63,9 +63,16 @@ static int run_app(t_xway_app *app)
 
 	while (app->running != 0)
 	{
-		if (wl_display_dispatch(app->display) == -1)
+		if (xway_wait_frame(app) == -1)
 			return (EXIT_FAILURE);
+		if (app->running == 0)
+			break;
+
 		check_keyboard(app);
+		draw_frame(app);
+
+		if (xway_present(app) == -1)
+			return (EXIT_FAILURE);
 	}
 
 	return (EXIT_SUCCESS);
