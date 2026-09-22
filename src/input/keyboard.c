@@ -332,6 +332,8 @@ static void on_keyboard_leave(
 		struct wl_surface *surface)
 {
 	t_xway_app *app;
+	uint8_t keys_down[XWAY_KEY_COUNT];
+	t_xway_key key;
 
 	(void)keyboard;
 	(void)serial;
@@ -341,8 +343,17 @@ static void on_keyboard_leave(
 	if (surface != app->surface)
 		return ;
 
+	memcpy(keys_down, app->keys_down, sizeof(keys_down));
 	app->keyboard_focused = 0;
 	memset(app->keys_down,0, sizeof(app->keys_down));
+
+	key = XWAY_KEY_UNKNOWN + 1;
+	while	(key < XWAY_KEY_COUNT)
+	{
+		if(keys_down[key] && app->key_callback)
+			app->key_callback(app, key,	XWAY_KEY_RELEASED,app->key_user_data);
+		key++;
+	}
 
 	fprintf(stderr, "xway-lib: keyboard focus left\n");
 }
@@ -381,6 +392,13 @@ static void on_keyboard_key(
 	else
 		return;
 
+	if(app->key_callback)
+	{
+		if(state == WL_KEYBOARD_KEY_STATE_PRESSED)
+			app->key_callback(app,xway_key,XWAY_KEY_PRESSED,app->key_user_data);
+		else
+			app->key_callback(app,xway_key,XWAY_KEY_RELEASED,app->key_user_data);
+	}
 	if(!app->xkb_state)
 		return;
 

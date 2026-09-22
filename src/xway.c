@@ -3,11 +3,15 @@
 #include "types.h"
 #include "xdg-shell-client-protocol.h"
 
+#include <asm-generic/errno-base.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/poll.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
+#include <poll.h>
 
 #define X(name) [name] = #name,
 
@@ -120,6 +124,70 @@ int	xway_wait_events(t_xway_app *app)
 	return (0);
 }
 
+int xway_poll_events(t_xway_app *app)
+{
+	struct pollfd fd;
+	int result;
+	int saved_errno;
+
+	if(!app || !app->display)
+		return (-1);
+
+	while (wl_display_prepare_read(app->display) != 0)
+	{
+		if	(wl_display_dispatch_pending(app->display) == -1)
+		{
+			app->running = 0;
+			return (-1);
+		}
+	}
+	if(wl_display_flush(app->display) == -1 && errno != EAGAIN)
+	{
+		wl_display_cancel_read(app->display);
+		app->running = 0;
+		return (-1);
+	}
+
+	fd.fd = wl_display_get_fd(app->display);
+	fd.events = POLLIN;
+	fd.revents = 0;
+
+	result = poll(&fd,  1,  0);
+	if(result == -1)
+	{
+		saved_errno = errno;
+		wl_display_cancel_read(app->display);
+		if(saved_errno == EINTR)
+			return (0);
+		app->running = 0;
+		return (-1);
+	}
+	if(fd.revents & (POLLERR | POLLHUP | POLLNVAL))
+	{
+		wl_display_cancel_read(app->display);
+		app->running = 0;
+		return (-1);
+	}	
+
+	if(fd.revents & POLLIN)
+	{
+		if(wl_display_read_events(app->display) == -1)
+		{
+			app->running = 0;
+			return (-1);
+		}
+	}
+	else
+		wl_display_cancel_read(app->display);
+	if(wl_display_dispatch_pending(app->display) == -1)
+	{
+		app->running = 0;
+		return (-1);
+	}
+	return (0);
+}
+
+
 int	xway_dispatch(t_xway_app *app)
 {
 	return (wl_display_dispatch(app->display));
@@ -147,4 +215,12 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels)
 
 		y++;
 	}
+}
+void xway_set_key_callback(t_xway_app *app, t_xway_key_callback callback, void *user_data)
+{
+	if(!app)
+		return;
+
+	app->key_callback = callback;
+	app->key_user_data = user_data;
 }

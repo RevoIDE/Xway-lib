@@ -39,6 +39,8 @@ typedef struct s_xway_app
 	struct wl_keyboard *keyboard;
 	uint8_t keys_down[XWAY_KEY_COUNT];
 	int keyboard_focused;
+	t_xway_key_callback key_callback;
+	void		*key_user_data;
 
 	struct xkb_context *xkb_context;
 	struct xkb_keymap *xkb_keymap;
