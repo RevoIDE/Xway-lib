@@ -1,5 +1,3 @@
-#include <time.h>
-#include <unistd.h>
 #define _GNU_SOURCE
 
 #include "xway.h"
@@ -8,30 +6,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 #include <wayland-client-core.h>
 
-// static void check_keyboard(t_xway_app *app)
-// {
-// 	static int previous_state[XWAY_KEY_COUNT];
-// 	t_xway_key key;
-// 	int current_state;
-// 
-// 	key = XWAY_KEY_UNKNOWN + 1;
-// 	while (key < XWAY_KEY_COUNT) 
-// 	{
-// 		current_state = xway_key_down(app, key);
-// 		if(current_state  != previous_state[key])
-// 		{
-// 			if(current_state)
-// 				fprintf(stderr, "xway-lib: key %s pressed\n", xway_key_name(key));
-// 			else
-// 				fprintf(stderr, "xway-lib: key %s released\n", xway_key_name(key));
-// 			previous_state[key] = current_state;
-// 		}
-// 		key++;
-// 	}
-// }
-	
 static void draw_frame(t_xway_app *app)
 {
 	int32_t x;
@@ -59,36 +37,30 @@ static void draw_frame(t_xway_app *app)
 static int run_app(t_xway_app *app)
 {
 	struct timespec pause;
-	unsigned int updates;
-	int result;
-	int blocking;
 
-	blocking = 0;
-	updates = 0;
 	pause.tv_sec = 0;
 	pause.tv_nsec = 100000000;
 
 	draw_frame(app);
-	if(xway_present(app) ==  -1)
+	if(xway_present(app) == -1)
 		return (EXIT_FAILURE);
 
 	while	(xway_is_running(app))
 	{
-		if(blocking)
-			result = xway_wait_events(app);
-		else
-			result = xway_poll_events(app);
-		if(result == -1)
+		if(xway_poll_events(app) == -1)
 			return (EXIT_FAILURE);
 		if(!xway_is_running(app))
 			break;
-		updates++;
-		fprintf(stderr,"updaes moteur : %u\n", updates);
+		if(xway_frame_ready(app))
+		{
+			if(xway_present(app) == -1)
+				return (EXIT_FAILURE);
+		}
 		nanosleep(&pause, NULL);
 	}
-
 	return (EXIT_SUCCESS);
 }
+
 static void on_key(
 		t_xway_app *app,
 		t_xway_key key,

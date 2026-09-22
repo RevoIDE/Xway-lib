@@ -31,6 +31,9 @@ typedef struct s_xway_app
 	uint32_t			*pixels;
 	size_t 				buffer_size_bytes;
 
+	struct wl_callback	*frame_callback;
+	int					frame_ready;
+
 	int32_t	width;
 	int32_t	height;
 	int32_t	stride_bytes;
@@ -71,6 +74,5 @@ void xway_window_cleanup(t_xway_app *app);
 int xway_keyboard_create(t_xway_app *app);
 
 void xway_keyboard_cleanup(t_xway_app *app);
-
 
 #endif
