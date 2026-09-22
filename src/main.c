@@ -39,7 +39,7 @@ static int run_app(t_xway_app *app)
 	struct timespec pause;
 
 	pause.tv_sec = 0;
-	pause.tv_nsec = 100000000;
+	pause.tv_nsec = 1000000;
 
 	draw_frame(app);
 	if(xway_present(app) == -1)

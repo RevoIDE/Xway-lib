@@ -3,12 +3,10 @@
 #include "types.h"
 #include "xdg-shell-client-protocol.h"
 
-#include <asm-generic/errno-base.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/poll.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <poll.h>
