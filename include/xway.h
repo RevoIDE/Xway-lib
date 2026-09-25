@@ -52,6 +52,7 @@ t_xway_app *xway_create(int width,int height,const char *title);
  * @param app Application to destroy. May be NULL.
  */
 void xway_destroy(t_xway_app *app);
+
 /**
  * @brief Presents the current framebuffer to the Wayland compositor.
  *
@@ -63,6 +64,7 @@ void xway_destroy(t_xway_app *app);
  * @return 0 on success,on -1 on failure.
  */
 int xway_present(t_xway_app *app);
+
 /**
  * @brief Dispatches Wayland events and waits for new events if necessary.
  *
@@ -73,6 +75,7 @@ int xway_present(t_xway_app *app);
  * @return The result returned by wl_display_dispatch(), or -1 on failure.
  */
 int	xway_dispatch(t_xway_app *app);
+
 /**
  * @brief Checks wheter the application is still running.
  *
@@ -81,6 +84,14 @@ int	xway_dispatch(t_xway_app *app);
  * @return Non-zero while the application is running,otherwise zero.
  */
 int xway_is_running(const t_xway_app *app);
+
+/**
+ * @brief Requests the application to quit (breaking remote loop, not a cleanup)
+ *
+ * @param app Application to stop.
+ */
+int xway_quit		(t_xway_app *app);
+
 /**
  * @brief Waits for and processes Wayland events.
  *
@@ -104,6 +115,7 @@ int xway_wait_events(t_xway_app *app);
  * @return 0 on success, or -1 on failure.
  */
 int xway_poll_events(t_xway_app *app);
+
 /**
  * @brief Requests notification when the compositor is ready for a new frame.
  *
@@ -114,6 +126,7 @@ int xway_poll_events(t_xway_app *app);
  * @return 0 on success, or -1 on failure.
  */
 int xway_request_frame(t_xway_app *app);
+
 /**
  * @brief Checks wheter the compositor is ready for a new frame.
  *
@@ -154,7 +167,6 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame);
  * @param app Application containning the destination framebuffer.
  * @param pixels pixels Source pixels array.
 */
-
 void	xway_blit(t_xway_app *app, uint32_t *pixels);
 
 /**
@@ -168,7 +180,6 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels);
  *
  * @return Non-zero if the key is held down,otherwise zero.
  */
-
 int	xway_key_down(const t_xway_app *app, t_xway_key key);
 
 /**
@@ -180,7 +191,6 @@ int	xway_key_down(const t_xway_app *app, t_xway_key key);
  *
  * @return A constant key name, or "XWAY_KEY_UNKNOWN" for an invalid key.
  */
-
 const char *xway_key_name(t_xway_key key);
 
 /**
@@ -195,6 +205,6 @@ const char *xway_key_name(t_xway_key key);
  * @param callback function called for each keyboard event, or NULL.
  * @param user_data User-defined pointer passed to the callback.
  */
-
 void xway_set_key_callback(t_xway_app *app,t_xway_key_callback callback,void *user_data);
+
 #endif

@@ -57,22 +57,18 @@ typedef struct s_xway_app
 }	t_xway_app;
 
 
-int	xway_app_init		(t_xway_app *app);
-int	xway_window_create	(t_xway_app *app);
-int	xway_buffer_create	(t_xway_app *app);
+int		xway_app_init		(t_xway_app *app);
 
+int		xway_window_create	(t_xway_app *app);
+int		xway_buffer_create	(t_xway_app *app);
+int 	xway_keyboard_create(t_xway_app *app);
+
+int 	xway_seat_bind(t_xway_app *app,uint32_t global_id,uint32_t server_version);
+
+void 	xway_seat_cleanup(t_xway_app *app);
+void 	xway_buffer_cleanup(t_xway_app *app);
+void 	xway_window_cleanup(t_xway_app *app);
+void 	xway_keyboard_cleanup(t_xway_app *app);
 void	xway_app_cleanup(t_xway_app *app);
-
-int xway_seat_bind(t_xway_app *app,uint32_t global_id,uint32_t server_version);
-
-void xway_seat_cleanup(t_xway_app *app);
-
-void xway_buffer_cleanup(t_xway_app *app);
-
-void xway_window_cleanup(t_xway_app *app);
-
-int xway_keyboard_create(t_xway_app *app);
-
-void xway_keyboard_cleanup(t_xway_app *app);
 
 #endif
