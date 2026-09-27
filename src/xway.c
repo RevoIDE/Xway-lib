@@ -51,6 +51,27 @@ int xway_key_down(const t_xway_app  *app, t_xway_key key)
 	return (app->keys_down[key] != 0);
 }
 
+int		xway_mouse_button_down(const t_xway_app *app, t_xway_mouse_button button)
+{
+	if(!app)
+		return (0);
+	if(!app->pointer_focused)
+		return(0);
+	if(button <= XWAY_MOUSE_BUTTON_UNKNOWN || button >= XWAY_MOUSE_BUTTON_COUNT)
+		return (0);
+	return	(app->mouse_buttons_down[button] != 0);
+}
+
+int xway_mouse_position(const t_xway_app *app, double *x, double *y)
+{
+	if(!app || !x || !y)
+		return (-1);
+
+	*x = app->mouse_x;
+	*y = app->mouse_y;
+
+	return (0);
+}
 t_xway_app	*xway_create(int width, int height, const char *title)
 {
 	t_xway_app *app;
@@ -303,7 +324,7 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels)
 void xway_set_key_callback(t_xway_app *app, t_xway_key_callback callback, void *user_data)
 {
 	if(!app)
-		return;
+	return;
 
 	app->key_callback = callback;
 	app->key_user_data = user_data;

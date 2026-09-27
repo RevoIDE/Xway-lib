@@ -8,7 +8,10 @@ void xway_seat_cleanup(t_xway_app *app)
 {
 	if(!app)
 		return;
+
 	xway_keyboard_cleanup(app);
+	xway_mouse_cleanup(app);
+
 	if(app->seat)
 	{
 		if(wl_seat_get_version(app->seat) >= WL_SEAT_RELEASE_SINCE_VERSION)
@@ -45,6 +48,14 @@ static void on_seat_capabilities(
 	}
 	else if(!app->has_keyboard && app->keyboard)
 		xway_keyboard_cleanup(app);
+	if(app->has_pointer && !app->pointer)
+	{
+		if(xway_mouse_create(app) == -1)
+			fprintf(stderr,"xway-lib: failed to create pointer\n");
+
+	}
+	else if(!app->has_pointer && app->pointer)
+		xway_mouse_cleanup(app);
 	fprintf(stderr, "xway-lib:  keyboard=%d pointer=%d\n", app->has_keyboard, app->has_pointer );
 
 }

@@ -53,6 +53,12 @@ typedef struct s_xway_app
 	int has_keyboard;
 	int has_pointer;
 
+	struct wl_pointer		*pointer;
+	uint8_t					mouse_buttons_down[XWAY_MOUSE_BUTTON_COUNT];
+	double					mouse_x;
+	double					mouse_y;
+	int						pointer_focused;
+
 	int	running;
 }	t_xway_app;
 
@@ -70,5 +76,8 @@ void 	xway_buffer_cleanup(t_xway_app *app);
 void 	xway_window_cleanup(t_xway_app *app);
 void 	xway_keyboard_cleanup(t_xway_app *app);
 void	xway_app_cleanup(t_xway_app *app);
+
+void xway_mouse_cleanup(t_xway_app *app);
+int		xway_mouse_create(t_xway_app	*app);
 
 #endif

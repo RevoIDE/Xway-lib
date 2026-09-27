@@ -29,6 +29,15 @@ typedef enum e_xway_key_action
 	XWAY_KEY_PRESSED
 }	t_xway_key_action;
 
+typedef enum e_xway_mouse_button
+{
+	XWAY_MOUSE_BUTTON_UNKNOWN = 0,
+	XWAY_MOUSE_BUTTON_LEFT,
+	XWAY_MOUSE_BUTTON_RIGHT,
+	XWAY_MOUSE_BUTTON_MIDDLE,
+	XWAY_MOUSE_BUTTON_COUNT
+}	t_xway_mouse_button;
+
 typedef void	(*t_xway_key_callback)(
 		t_xway_app *app,
 		t_xway_key key,
@@ -206,5 +215,7 @@ const char *xway_key_name(t_xway_key key);
  * @param user_data User-defined pointer passed to the callback.
  */
 void xway_set_key_callback(t_xway_app *app,t_xway_key_callback callback,void *user_data);
+int	xway_mouse_button_down(const	t_xway_app *app,t_xway_mouse_button button);
+int		xway_mouse_position(const t_xway_app *app,double *x,double *y);
 
 #endif

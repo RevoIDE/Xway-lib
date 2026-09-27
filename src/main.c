@@ -33,6 +33,49 @@ static void draw_frame(t_xway_app *app)
 		y++;
 	}
 }
+static void	check_mouse_buttons(t_xway_app *app)
+{
+	static	const char *names[XWAY_MOUSE_BUTTON_COUNT] = 
+	{
+		[XWAY_MOUSE_BUTTON_LEFT] = "left",
+		[XWAY_MOUSE_BUTTON_RIGHT] = "right",
+		[XWAY_MOUSE_BUTTON_MIDDLE] = "middle"
+	};
+	static int previous[XWAY_MOUSE_BUTTON_COUNT];
+	t_xway_mouse_button button;
+	int current;
+	button = XWAY_MOUSE_BUTTON_UNKNOWN +  1;
+	while(button < XWAY_MOUSE_BUTTON_COUNT)
+	{
+		current = xway_mouse_button_down(app, button);
+		if(current != previous[button])
+		{
+			if(current)
+				fprintf(stderr, "xway_lib: mouse %s pressed\n",names[button]);
+			else
+				fprintf(stderr, "xway_lib: mouse %s released\n",names[button]);
+		previous[button] = current;
+		}
+		button++;
+	}
+}
+
+static void check_mouse_position(t_xway_app *app)
+{
+	static double previous_x = -1.0;
+	static double previous_y = -1.0;
+	double		x;
+	double		y;
+
+	if(xway_mouse_position(app, &x, &y) == -1)
+		return ;
+	if(x == previous_x && y == previous_y)
+		return;
+
+	fprintf(stderr, "xway_lib: mouse x=%.2f y=%.2f\n",x,y);
+	previous_x = x;
+	previous_y = y;
+}
 
 static int run_app(t_xway_app *app)
 {
@@ -51,6 +94,10 @@ static int run_app(t_xway_app *app)
 			return (EXIT_FAILURE);
 		if(!xway_is_running(app))
 			break;
+
+		check_mouse_position(app);
+		check_mouse_buttons(app);
+
 		if(xway_frame_ready(app))
 		{
 			if(xway_present(app) == -1)
