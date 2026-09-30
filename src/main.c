@@ -76,7 +76,31 @@ static void check_mouse_position(t_xway_app *app)
 	previous_x = x;
 	previous_y = y;
 }
+static void check_relative_mouse(t_xway_app *app)
+{
+	static int previous_capture_state = 0;
+	int			captured;
+	double		delta_x;
+	double		delta_y;
 
+	captured = xway_mouse_captured(app);
+	if(captured != previous_capture_state)
+	{
+		if(captured)
+			fprintf(stderr,"xway_lib: pointer captured\n");
+		else
+			fprintf(stderr,"xway_lib: pointer released\n");
+
+		previous_capture_state = captured;
+	}
+	if(xway_mouse_delta(app,&delta_x, &delta_y) == -1)
+		return;
+
+	if(delta_x == 0.0 && delta_y == 0.0)
+		return;
+
+	fprintf(stderr,"xway_lib: relative dx=%.2f dy=%.2f\n",delta_x,delta_y);
+}
 static int run_app(t_xway_app *app)
 {
 	struct timespec pause;
@@ -102,6 +126,7 @@ static int run_app(t_xway_app *app)
 
 		check_mouse_position(app);
 		check_mouse_buttons(app);
+		check_relative_mouse(app);
 
 		if(xway_frame_ready(app))
 		{
@@ -129,11 +154,21 @@ static void on_key(
 		t_xway_key_action action,
 		void *user_data)
 {
-	(void)app;
 	(void)user_data;
 
 	if(action == XWAY_KEY_PRESSED)
+	{
 		fprintf(stderr, "callback: %s pressed\n",xway_key_name(key));
+		if(key == XWAY_KEY_C)
+		{
+			if(xway_mouse_capture(app, 1) == -1)
+				fprintf(stderr, "xway_lib: pointer capture unavailable\n");
+			else
+				fprintf(stderr, "xway_lib pointer capture requested\n");
+		}
+		else if(key == XWAY_KEY_ESCAPE)
+			xway_mouse_capture(app,0);
+	}
 	else if (action == XWAY_KEY_RELEASED)
 		fprintf(stderr, "callback %s released\n",xway_key_name(key));
 }

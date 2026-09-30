@@ -1,5 +1,10 @@
+#include <stdint.h>
 #define _GNU_SOURCE
+
 #include <wayland-client-protocol.h>
+
+#include "pointer-constraints-unstable-v1-client-protocol.h"
+#include "relative-pointer-unstable-v1-client-protocol.h"
 
 #include "xway.h"
 
@@ -91,6 +96,34 @@ static void on_registry_global(
 			}
 		}
 	}
+
+	if(!app->relative_pointer_manager
+			&& strcmp(interface, zwp_relative_pointer_manager_v1_interface.name) == 0)
+	{
+		bind_version = server_version;
+		if(bind_version > (uint32_t) zwp_relative_pointer_manager_v1_interface.version)
+			bind_version = (uint32_t)zwp_relative_pointer_manager_v1_interface.version;
+
+		app->relative_pointer_manager = wl_registry_bind(
+				registry,
+				global_id,
+				&zwp_relative_pointer_manager_v1_interface,
+				bind_version);
+	}
+	if(!app->pointer_constraints
+			&& strcmp(interface, zwp_pointer_constraints_v1_interface.name) == 0)
+	{
+		bind_version = server_version;
+		if(bind_version > (uint32_t)zwp_pointer_constraints_v1_interface.version)
+			bind_version = (uint32_t)zwp_pointer_constraints_v1_interface.version;
+
+		app->pointer_constraints = wl_registry_bind(
+				registry,
+				global_id,
+				&zwp_pointer_constraints_v1_interface,
+				bind_version);
+	}
+
 	if(!app->seat && strcmp(interface, wl_seat_interface.name) == 0)
 	{
 		if(xway_seat_bind(app,global_id,server_version) == -1)	
@@ -129,7 +162,21 @@ void xway_app_cleanup(t_xway_app *app)
 {
 	if (!app)
 		return;
+
 	xway_seat_cleanup(app);
+
+	if(app->pointer_constraints)
+	{
+		zwp_pointer_constraints_v1_destroy(app->pointer_constraints);
+		app->pointer_constraints = NULL;
+	}
+
+	if(app->relative_pointer_manager)
+	{
+		zwp_relative_pointer_manager_v1_destroy(app->relative_pointer_manager);
+		app->relative_pointer_manager = NULL;
+	}
+
 	xway_buffer_cleanup(app);
 	xway_window_cleanup(app);
 

@@ -195,6 +195,8 @@ int	xway_present(t_xway_app *app)
 	wl_surface_damage(app->surface, 0, 0,app->width, app->height);
 	wl_surface_commit(app->surface);
 
+	app->buffer_busy = 1;
+
 	return (0);
 }
 

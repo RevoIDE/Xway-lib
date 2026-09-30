@@ -15,6 +15,11 @@
 
 #define XWAY_RAW_KEY_COUNT KEY_CNT
 
+struct	zwp_relative_pointer_manager_v1;
+struct	zwp_relative_pointer_v1;
+struct	zwp_pointer_constraints_v1;
+struct	zwp_locked_pointer_v1;
+
 typedef struct s_xway_app
 {
 	struct wl_display		*display;
@@ -63,6 +68,15 @@ typedef struct s_xway_app
 	double					mouse_x;
 	double					mouse_y;
 	int						pointer_focused;
+
+	struct zwp_relative_pointer_manager_v1		*relative_pointer_manager;
+	struct zwp_pointer_constraints_v1			*pointer_constraints;
+	struct zwp_relative_pointer_v1				*relative_pointer;
+	struct zwp_locked_pointer_v1				*locked_pointer;
+
+	double		mouse_delta_x;
+	double		mouse_delta_y;
+	int			pointer_locked;
 
 	int						running;
 }	t_xway_app;

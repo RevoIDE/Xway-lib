@@ -1,10 +1,13 @@
 #include "app.h"
+#include "pointer-constraints-unstable-v1-client-protocol.h"
+#include "relative-pointer-unstable-v1-client-protocol.h"
 #include "xway.h"
 
 #include <linux/input-event-codes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <wayland-client-protocol.h>
 #include <wayland-util.h>
 
@@ -25,8 +28,24 @@ void	xway_mouse_cleanup(t_xway_app *app)
 		return;
 
 	app->pointer_focused = 0;
+	app->pointer_locked = 0;
+	app->mouse_delta_x = 0.0;
+	app->mouse_delta_y = 0.0;
+
 	memset(app->mouse_buttons_down,0,sizeof(app->mouse_buttons_down));
 
+	if(app->locked_pointer)
+	{
+		zwp_locked_pointer_v1_destroy(app->locked_pointer);
+		app->locked_pointer = NULL;
+	}
+	
+	if(app->relative_pointer)
+	{
+		zwp_relative_pointer_v1_destroy(app->relative_pointer);
+		app->relative_pointer = NULL;
+	}
+	
 	if(app->pointer)
 	{
 		if(wl_pointer_get_version(app->pointer)
@@ -179,6 +198,38 @@ static	void	on_pointer_axis_discrete(
 	(void)axis;
 	(void)discrete;
 }
+static void on_relative_motion(
+		void *data,
+		struct zwp_relative_pointer_v1 *relative_pointer,
+		uint32_t	utime_hi,
+		uint32_t	utime_lo,
+		wl_fixed_t	dx,
+		wl_fixed_t	dy,
+		wl_fixed_t	dx_unaccelerated,
+		wl_fixed_t	dy_unaccelerated)
+{
+	t_xway_app *app;
+
+	(void)relative_pointer;
+	(void)utime_hi;
+	(void)utime_lo;
+	(void)dx;
+	(void)dy;
+
+	app = data;
+	if(!app->pointer_locked)
+		return;
+	
+	app->mouse_delta_x += wl_fixed_to_double(dx_unaccelerated);
+	app->mouse_delta_y += wl_fixed_to_double(dy_unaccelerated);
+
+}
+static const struct zwp_relative_pointer_v1_listener g_relative_pointer_listener = 
+{
+	.relative_motion = on_relative_motion
+};
+
+
 static	const	struct	wl_pointer_listener		g_pointer_listener = 
 {
 	.enter = on_pointer_enter,
@@ -190,6 +241,40 @@ static	const	struct	wl_pointer_listener		g_pointer_listener =
 	.axis_source = on_pointer_axis_source,
 	.axis_stop = on_pointer_axis_stop,
 	.axis_discrete = on_pointer_axis_discrete
+};
+
+static void on_pointer_locked(
+		void *data,
+		struct zwp_locked_pointer_v1 *locked_pointer)
+
+{
+	t_xway_app *app;
+
+	(void)locked_pointer;
+
+	app = data;
+	app->pointer_locked = 1;
+	app->mouse_delta_x = 0.0;
+	app->mouse_delta_y = 0.0;
+}
+static void on_pointer_unlocked(
+		void *data,
+		struct zwp_locked_pointer_v1 *locked_pointer)
+{
+	t_xway_app *app;
+
+	(void)locked_pointer;
+
+	app = data;
+	app->pointer_locked = 0;
+	app->mouse_delta_x = 0.0;
+	app->mouse_delta_y = 0.0;
+}
+static const struct zwp_locked_pointer_v1_listener
+	g_locked_pointer_listener = 
+{
+	.locked = on_pointer_locked,
+	.unlocked = on_pointer_unlocked
 };
 
 int	xway_mouse_create(t_xway_app *app)
@@ -211,5 +296,86 @@ int	xway_mouse_create(t_xway_app *app)
 			xway_mouse_cleanup(app);
 			return (-1);
 		}
+		if(!app->relative_pointer_manager)
+			return (0);
+		app->relative_pointer = zwp_relative_pointer_manager_v1_get_relative_pointer(app->relative_pointer_manager,  app->pointer);
+
+		if(!app->relative_pointer)
+		{
+			fprintf(stderr,"xway-lib: relative pointer unavailable\n");
+			return (0);
+		}
+		if(zwp_relative_pointer_v1_add_listener(app->relative_pointer,&g_relative_pointer_listener,app) == -1)
+		{
+			fprintf(stderr,"xway-lib: failed to add relative pointer listener\n");
+			zwp_relative_pointer_v1_destroy(app->relative_pointer);
+			app->relative_pointer = NULL;
+		}
 		return (0);
+}
+int xway_mouse_capture(t_xway_app *app, int enabled)
+{
+	if(!app)
+		return (-1);
+
+	if(!enabled)
+	{
+		if(app->locked_pointer)
+		{
+			zwp_locked_pointer_v1_destroy(app->locked_pointer);
+			app->locked_pointer = NULL;
+		}
+		app->pointer_locked = 0;
+		app->mouse_delta_x = 0.0;
+		app->mouse_delta_y = 0.0;
+		return (0);
+	}
+	if(app->locked_pointer)
+		return (0);
+
+	if(!app->pointer 
+			|| !app->surface
+			|| !app->pointer_constraints
+			|| !app->relative_pointer)
+	{
+		return (-1);
+	}
+	app->locked_pointer = zwp_pointer_constraints_v1_lock_pointer(
+					app->pointer_constraints,
+					app->surface,
+					app->pointer,
+					NULL,
+					ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
+	if(!app->locked_pointer)
+		return (-1);
+
+	if(zwp_locked_pointer_v1_add_listener(app->locked_pointer,&g_locked_pointer_listener,app) == -1)
+	{	
+		zwp_locked_pointer_v1_destroy(app->locked_pointer);
+		app->locked_pointer = NULL;
+		return (-1);
+	}
+	app->mouse_delta_x = 0.0;
+	app->mouse_delta_y = 0.0;
+
+	return (0);
+}
+int		xway_mouse_captured(const t_xway_app *app)
+{
+	if(!app)
+		return (0);
+	return (app->pointer_locked != 0);
+}
+int xway_mouse_delta(t_xway_app *app, double *delta_x, double *delta_y)
+{
+	if(!app || !delta_x || !delta_y)
+		return (-1);
+
+	*delta_x = app->mouse_delta_x;
+	*delta_y = app->mouse_delta_y;
+
+	app->mouse_delta_x = 0.0;
+	app->mouse_delta_y = 0.0;
+
+	return (0);
 }

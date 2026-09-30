@@ -217,5 +217,10 @@ const char *xway_key_name(t_xway_key key);
 void xway_set_key_callback(t_xway_app *app,t_xway_key_callback callback,void *user_data);
 int	xway_mouse_button_down(const	t_xway_app *app,t_xway_mouse_button button);
 int		xway_mouse_position(const t_xway_app *app,double *x,double *y);
-
+int xway_mouse_capture(t_xway_app *app, int enabled);
+int xway_mouse_captured(const t_xway_app *app);
+int xway_mouse_delta(
+		t_xway_app *app,
+		double *delta_x,
+		double *delta_y);
 #endif
