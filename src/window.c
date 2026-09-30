@@ -23,11 +23,21 @@ static void on_toplevel_configure(
 	int32_t height,
 	struct wl_array *states)
 {
-	(void)data;
+	t_xway_app *app;
+
 	(void)toplevel;
-	(void)width;
-	(void)height;
 	(void)states;
+
+	app = data;
+
+	if(width <= 0 || height <= 0)
+		return;
+	if(width == app->width && height == app->height)
+		return;
+	app->pending_width = width;
+	app->pending_height = height;
+	app->resize_pending = 1;
+
 }
 
 static void on_toplevel_close(void *data, struct xdg_toplevel *toplevel)

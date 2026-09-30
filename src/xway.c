@@ -86,6 +86,10 @@ t_xway_app	*xway_create(int width, int height, const char *title)
 	app->width	= width;
 	app->height = height;
 
+	app->pending_width = width;
+	app->pending_height = height;
+	app->resize_pending = 0;
+
 	if (xway_app_init(app) == -1)
 	{
 		xway_destroy(app);
@@ -181,6 +185,8 @@ int	xway_present(t_xway_app *app)
 
 	if (!app->surface || !app->buffer)
 		return (-1);
+	if(app->buffer_busy)
+		return (1);
 
 	if (xway_request_frame(app) == -1)
 		return (-1);
@@ -304,7 +310,7 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels)
 
 	int32_t y;
 
-	if (!app || !app->pixels || !pixels)
+	if (!app || !app->pixels || !pixels || app->buffer_busy)
 		return;
 
 	y = 0;

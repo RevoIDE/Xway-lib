@@ -1,4 +1,6 @@
 #define _GNU_SOURCE
+#include <stdint.h>
+#include <wayland-client-protocol.h>
 
 #include "app.h"
 
@@ -26,7 +28,20 @@ static int create_shm_file(size_t size_bytes)
 
 	return (fd);
 }
+static void on_buffer_release(
+		void *data,
+		struct wl_buffer	*buffer)
+{
+	t_xway_app *app;
 
+	(void)buffer;
+
+	app = data;
+	app->buffer_busy = 0;
+}
+static const struct wl_buffer_listener buffer_listener = {
+	.release = on_buffer_release,
+};
 int xway_buffer_create(t_xway_app *app)
 {
 	struct wl_shm_pool *pool;
@@ -97,6 +112,15 @@ int xway_buffer_create(t_xway_app *app)
 		app->pixels = NULL;
 		return (-1);
 	}
+	if(wl_buffer_add_listener(
+				app->buffer, &buffer_listener,	app) == -1)
+	{
+		fprintf(stderr,	"xway-lib: failed to add buffer listener\n");
+		xway_buffer_cleanup(app);
+		return (-1);
+	}
+	app->stride_bytes = 0;
+	app->buffer_busy = 0;
 
 	return (0);
 }
@@ -113,4 +137,44 @@ void xway_buffer_cleanup(t_xway_app *app)
 	app->pixels = NULL;
 	app->buffer_size_bytes = 0;
 	app->stride_bytes = 0;
+	app->buffer_busy = 0;
+}
+int xway_apply_resize(t_xway_app *app)
+{
+	int32_t old_width;
+	int32_t old_height;
+
+	if(!app)
+		return (-1);
+	if(!app->resize_pending)
+		return(0);
+	if(app->buffer_busy)
+		return (1);
+	if(app->pending_width <= 0 || app->pending_height <= 0)
+	{
+		app->resize_pending = 0;
+		return (-1);
+	}
+	old_width = app->width;
+	old_height = app->height;
+
+	xway_buffer_cleanup(app);
+
+	app->width = app->pending_width;
+	app->height = app->pending_height;
+
+	if(xway_buffer_create(app) == -1)
+	{
+		app->width = old_width;
+		app->height = old_height;
+
+		xway_buffer_cleanup(app);
+		if(xway_buffer_create(app) == -1)
+			app->running = 0;
+
+		return (-1);
+	}	
+	app->resize_pending = 0;
+	return (0);
+	
 }

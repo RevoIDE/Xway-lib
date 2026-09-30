@@ -148,10 +148,20 @@ void xway_app_cleanup(t_xway_app *app)
 
 int xway_get_frame(t_xway_app *app, t_xway_frame *frame)
 {
+	int resize_result;
+
 	if( !app || !frame)
 		return (-1);
+	
+	resize_result = xway_apply_resize(app);
+	if(resize_result != 0)
+		return (resize_result);
+
 	if(!app->pixels)
 		return (-1);
+
+	if(app->buffer_busy)
+		return (1);
 
 	frame->pixels = app->pixels;
 	frame->width = app->width;

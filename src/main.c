@@ -80,12 +80,17 @@ static void check_mouse_position(t_xway_app *app)
 static int run_app(t_xway_app *app)
 {
 	struct timespec pause;
+	t_xway_frame frame;
+
+	int	frame_result;
+	int present_result;
 
 	pause.tv_sec = 0;
 	pause.tv_nsec = 1000000;
 
 	draw_frame(app);
-	if(xway_present(app) == -1)
+	present_result = xway_present(app);
+	if(present_result == -1)
 		return (EXIT_FAILURE);
 
 	while	(xway_is_running(app))
@@ -100,8 +105,18 @@ static int run_app(t_xway_app *app)
 
 		if(xway_frame_ready(app))
 		{
-			if(xway_present(app) == -1)
+			frame_result = xway_get_frame(app, &frame);
+			if(frame_result == -1)
 				return (EXIT_FAILURE);
+			if(frame_result == 0)
+			{
+				//fprintf(stderr, "frame: %d x %d\n",frame.width , frame.height);
+				draw_frame(app);
+
+				present_result = xway_present(app);
+				if(present_result == -1)
+					return (EXIT_FAILURE);
+			}
 		}
 		nanosleep(&pause, NULL);
 	}
