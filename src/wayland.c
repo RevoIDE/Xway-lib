@@ -126,7 +126,7 @@ static void on_registry_global(
 
 	if(!app->seat && strcmp(interface, wl_seat_interface.name) == 0)
 	{
-		if(xway_seat_bind(app,global_id,server_version) == -1)	
+		if(xway_seat_bind(app,global_id,server_version) == -1)
 			return;
 	}
 }
@@ -199,7 +199,7 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame)
 
 	if( !app || !frame)
 		return (-1);
-	
+
 	resize_result = xway_apply_resize(app);
 	if(resize_result != 0)
 		return (resize_result);
@@ -216,4 +216,3 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame)
 	frame->stride_bytes = app->stride_bytes;
 	return (0);
 }
-

@@ -13,7 +13,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 
-static const t_xway_key g_linux_to_xway[XWAY_RAW_KEY_COUNT] = 
+static const t_xway_key g_linux_to_xway[XWAY_RAW_KEY_COUNT] =
 {
 	[KEY_A] = XWAY_KEY_A,
 	[KEY_B] = XWAY_KEY_B,
@@ -81,7 +81,7 @@ static const t_xway_key g_linux_to_xway[XWAY_RAW_KEY_COUNT] =
 	[KEY_LEFTMETA] = XWAY_KEY_LEFT_SUPER,
 	[KEY_RIGHTMETA] = XWAY_KEY_RIGHT_SUPER,
 	[KEY_COMPOSE] = XWAY_KEY_MENU,
-	
+
 	[KEY_INSERT] = XWAY_KEY_INSERT,
 	[KEY_DELETE] = XWAY_KEY_DELETE,
 	[KEY_HOME] = XWAY_KEY_HOME,
@@ -243,7 +243,7 @@ static void on_keyboard_keymap(
 		xkb_keymap_unref(app->xkb_keymap);
 		app->xkb_keymap = NULL;
 	}
-	if(format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1 
+	if(format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1
 			|| size == 0
 			|| !app->xkb_context)
 	{
@@ -496,6 +496,6 @@ int xway_keyboard_create(t_xway_app *app)
 		xway_keyboard_cleanup(app);
 		return (-1);
 	}
-	
+
 	return (0);
 }

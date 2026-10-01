@@ -18,7 +18,7 @@ static void draw_frame(t_xway_frame *frame)
 	y = 0;
 	while (y < frame->height)
 	{
-		row_start = (uint8_t *)frame->pixels 
+		row_start = (uint8_t *)frame->pixels
 			+ (size_t)y * (size_t)frame->stride_bytes;
 		row = (uint32_t *)row_start;
 
@@ -33,7 +33,7 @@ static void draw_frame(t_xway_frame *frame)
 }
 static void	check_mouse_buttons(t_xway_app *app)
 {
-	static	const char *names[XWAY_MOUSE_BUTTON_COUNT] = 
+	static	const char *names[XWAY_MOUSE_BUTTON_COUNT] =
 	{
 		[XWAY_MOUSE_BUTTON_LEFT] = "left",
 		[XWAY_MOUSE_BUTTON_RIGHT] = "right",
@@ -187,7 +187,7 @@ int main(void)
 	xway_set_key_callback(app,on_key,NULL);
 
 	exit_status = run_app(app);
-	
+
 	xway_destroy(app);
 
 	return (exit_status);

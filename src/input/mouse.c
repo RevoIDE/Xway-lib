@@ -39,13 +39,13 @@ void	xway_mouse_cleanup(t_xway_app *app)
 		zwp_locked_pointer_v1_destroy(app->locked_pointer);
 		app->locked_pointer = NULL;
 	}
-	
+
 	if(app->relative_pointer)
 	{
 		zwp_relative_pointer_v1_destroy(app->relative_pointer);
 		app->relative_pointer = NULL;
 	}
-	
+
 	if(app->pointer)
 	{
 		if(wl_pointer_get_version(app->pointer)
@@ -219,18 +219,18 @@ static void on_relative_motion(
 	app = data;
 	if(!app->pointer_locked)
 		return;
-	
+
 	app->mouse_delta_x += wl_fixed_to_double(dx_unaccelerated);
 	app->mouse_delta_y += wl_fixed_to_double(dy_unaccelerated);
 
 }
-static const struct zwp_relative_pointer_v1_listener g_relative_pointer_listener = 
+static const struct zwp_relative_pointer_v1_listener g_relative_pointer_listener =
 {
 	.relative_motion = on_relative_motion
 };
 
 
-static	const	struct	wl_pointer_listener		g_pointer_listener = 
+static	const	struct	wl_pointer_listener		g_pointer_listener =
 {
 	.enter = on_pointer_enter,
 	.leave = on_pointer_leave,
@@ -271,7 +271,7 @@ static void on_pointer_unlocked(
 	app->mouse_delta_y = 0.0;
 }
 static const struct zwp_locked_pointer_v1_listener
-	g_locked_pointer_listener = 
+	g_locked_pointer_listener =
 {
 	.locked = on_pointer_locked,
 	.unlocked = on_pointer_unlocked
@@ -333,7 +333,7 @@ int xway_mouse_capture(t_xway_app *app, int enabled)
 	if(app->locked_pointer)
 		return (0);
 
-	if(!app->pointer 
+	if(!app->pointer
 			|| !app->surface
 			|| !app->pointer_constraints
 			|| !app->relative_pointer)
@@ -350,7 +350,7 @@ int xway_mouse_capture(t_xway_app *app, int enabled)
 		return (-1);
 
 	if(zwp_locked_pointer_v1_add_listener(app->locked_pointer,&g_locked_pointer_listener,app) == -1)
-	{	
+	{
 		zwp_locked_pointer_v1_destroy(app->locked_pointer);
 		app->locked_pointer = NULL;
 		return (-1);

@@ -36,7 +36,7 @@ static void on_seat_capabilities(
 
 	app = data;
 
-	app->has_keyboard = 
+	app->has_keyboard =
 		(capabilities & WL_SEAT_CAPABILITY_KEYBOARD) != 0;
 	app->has_pointer =
 		(capabilities & WL_SEAT_CAPABILITY_POINTER) != 0;

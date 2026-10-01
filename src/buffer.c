@@ -172,8 +172,8 @@ int xway_apply_resize(t_xway_app *app)
 			app->running = 0;
 
 		return (-1);
-	}	
+	}
 	app->resize_pending = 0;
 	return (0);
-	
+
 }

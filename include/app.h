@@ -54,7 +54,7 @@ typedef struct s_xway_app
 	int						keyboard_focused;
 	t_xway_key_callback		key_callback;
 	void					*key_user_data;
-	
+
 	struct xkb_context		*xkb_context;
 	struct xkb_keymap		*xkb_keymap;
 	struct xkb_state		*xkb_state;
