@@ -9,6 +9,12 @@
 
 #include "xdg-shell-client-protocol.h"
 
+#include <xkbcommon/xkbcommon.h>
+
+#include <linux/input-event-codes.h>
+
+#define XWAY_RAW_KEY_COUNT KEY_CNT
+
 typedef struct s_xway_app
 {
 	struct wl_display		*display;
@@ -16,26 +22,68 @@ typedef struct s_xway_app
 	struct wl_compositor	*compositor;
 	struct wl_shm			*shm;
 
-	struct wl_surface	*surface;
-	struct xdg_wm_base 	*wm_base;
-	struct xdg_surface 	*xdg_surface;
-	struct xdg_toplevel	*toplevel;
+	struct wl_surface		*surface;
+	struct xdg_wm_base		*wm_base;
+	struct xdg_surface		*xdg_surface;
+	struct xdg_toplevel		*toplevel;
 
-	struct wl_buffer	*buffer;
-	uint32_t			*pixels;
-	size_t 				buffer_size_bytes;
+	struct wl_buffer		*buffer;
+	int						buffer_busy;
+	uint32_t				*pixels;
+	size_t					buffer_size_bytes;
 
-	int32_t	width;
-	int32_t	height;
-	int32_t	stride_bytes;
+	struct wl_callback		*frame_callback;
+	int						frame_ready;
 
-	int	running;
+	int32_t					width;
+	int32_t					height;
+	int32_t					stride_bytes;
+
+	int32_t					pending_width;
+	int32_t					pending_height;
+	int						resize_pending;
+
+	struct wl_seat			*seat;
+	struct wl_keyboard		*keyboard;
+	uint8_t					keys_down[XWAY_KEY_COUNT];
+	int						keyboard_focused;
+	t_xway_key_callback		key_callback;
+	void					*key_user_data;
+	
+	struct xkb_context		*xkb_context;
+	struct xkb_keymap		*xkb_keymap;
+	struct xkb_state		*xkb_state;
+
+	uint32_t				seat_global_id;
+	int						has_keyboard;
+	int						has_pointer;
+
+	struct wl_pointer		*pointer;
+	uint8_t					mouse_buttons_down[XWAY_MOUSE_BUTTON_COUNT];
+	double					mouse_x;
+	double					mouse_y;
+	int						pointer_focused;
+
+	int						running;
 }	t_xway_app;
 
-int	xway_app_init		(t_xway_app *app);
-int	xway_window_create	(t_xway_app *app);
-int	xway_buffer_create	(t_xway_app *app);
 
+int		xway_app_init		(t_xway_app *app);
+
+int		xway_window_create	(t_xway_app *app);
+int		xway_buffer_create	(t_xway_app *app);
+int 	xway_keyboard_create(t_xway_app *app);
+
+int 	xway_seat_bind(t_xway_app *app,uint32_t global_id,uint32_t server_version);
+
+void 	xway_seat_cleanup(t_xway_app *app);
+void 	xway_buffer_cleanup(t_xway_app *app);
+void 	xway_window_cleanup(t_xway_app *app);
+void 	xway_keyboard_cleanup(t_xway_app *app);
 void	xway_app_cleanup(t_xway_app *app);
+
+void xway_mouse_cleanup(t_xway_app *app);
+int		xway_mouse_create(t_xway_app	*app);
+int xway_apply_resize(t_xway_app *app);
 
 #endif

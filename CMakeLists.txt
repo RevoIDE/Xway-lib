@@ -10,6 +10,7 @@ find_package(PkgConfig REQUIRED)
 find_program(WAYLAND_SCANNER wayland-scanner REQUIRED)
 
 pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+pkg_check_modules(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 
 set(XDG_SHELL_XML
@@ -29,11 +30,18 @@ add_custom_command(
     VERBATIM
 )
 
-add_library(xway STATIC
-	src/xway.c
-	src/wayland.c
-	"${XDG_SHELL_C}"
-)
+  file(GLOB_RECURSE XWAY_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+  )
+
+  list(REMOVE_ITEM XWAY_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
+  )
+
+  add_library(xway STATIC
+        ${XWAY_SOURCES}
+        "${XDG_SHELL_C}"
+  )
 
 add_executable(xway-main src/main.c)
 
@@ -56,3 +64,4 @@ target_link_libraries(xway PRIVATE
 target_compile_options(xway PRIVATE
     ${WAYLAND_CFLAGS_OTHER}
 )
+target_link_libraries(xway PRIVATE PkgConfig::XKBCOMMON)
