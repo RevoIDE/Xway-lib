@@ -70,7 +70,7 @@ void xway_destroy(t_xway_app *app);
  *
  * @param app application whose framebuffer will be presente.
  *
- * @return 0 on success,on -1 on failure.
+ * @return 0 on success, 1 if the framebuffer is still busy, or -1 on failure.
  */
 int xway_present(t_xway_app *app);
 
@@ -164,7 +164,7 @@ int xway_wait_frame(t_xway_app *app);
  * @param app Application containning the framebuffer
  * @param frame Output structure receiving	 the framebuffer information.
  *
- * @return 0 on success, or -1 arguments or framebuffer are invalid.
+ * @return 0 on success, 1 if the framebuffer is temporarily unavailable, or -1 on failure
  */
 int xway_get_frame(t_xway_app *app, t_xway_frame *frame);
 
