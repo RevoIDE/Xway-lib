@@ -2,6 +2,7 @@ CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
 CMakeScripts
+doto
 Testing
 Makefile
 cmake_install.cmake
