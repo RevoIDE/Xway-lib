@@ -1,16 +1,14 @@
 #define _GNU_SOURCE
 
 #include "xway.h"
-#include "app.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <wayland-client-core.h>
 
-static void draw_frame(t_xway_app *app)
+static void draw_frame(t_xway_frame *frame)
 {
 	int32_t x;
 	int32_t y;
@@ -18,14 +16,14 @@ static void draw_frame(t_xway_app *app)
 	uint32_t *row;
 
 	y = 0;
-	while (y < app->height)
+	while (y < frame->height)
 	{
-		row_start = (uint8_t *)app->pixels 
-			+ (size_t)y * (size_t)app->stride_bytes;
+		row_start = (uint8_t *)frame->pixels 
+			+ (size_t)y * (size_t)frame->stride_bytes;
 		row = (uint32_t *)row_start;
 
 		x = 0;
-		while (x < app->width)
+		while (x < frame->width)
 		{
 			row[x] = 0x00FFFFFF;
 			x++;
@@ -112,7 +110,11 @@ static int run_app(t_xway_app *app)
 	pause.tv_sec = 0;
 	pause.tv_nsec = 1000000;
 
-	draw_frame(app);
+	frame_result = xway_get_frame(app, &frame);
+	if(frame_result != 0)
+		return (EXIT_FAILURE);
+	draw_frame(&frame);
+
 	present_result = xway_present(app);
 	if(present_result == -1)
 		return (EXIT_FAILURE);
@@ -136,7 +138,7 @@ static int run_app(t_xway_app *app)
 			if(frame_result == 0)
 			{
 				//fprintf(stderr, "frame: %d x %d\n",frame.width , frame.height);
-				draw_frame(app);
+				draw_frame(&frame);
 
 				present_result = xway_present(app);
 				if(present_result == -1)

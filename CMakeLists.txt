@@ -20,6 +20,9 @@ set(XDG_SHELL_XML
 set(XDG_SHELL_C
     "${CMAKE_CURRENT_BINARY_DIR}/xdg-shell-protocol.c"
 )
+set(XDG_SHELL_HEADER
+	"${CMAKE_CURRENT_BINARY_DIR}/xdg-shell-client-protocol.h"
+)
 set(RELATIVE_POINTER_HEADER
     "${CMAKE_CURRENT_BINARY_DIR}/relative-pointer-unstable-v1-client-protocol.h"
 )
@@ -44,13 +47,23 @@ set(POINTER_CONSTRAINTS_XML
 )
 
 add_custom_command(
-    OUTPUT "${XDG_SHELL_C}"
-    COMMAND "${WAYLAND_SCANNER}" private-code
-            "${XDG_SHELL_XML}" "${XDG_SHELL_C}"
-    DEPENDS "${XDG_SHELL_XML}"
-    COMMENT "Generation de xdg-shell-protocol.c"
+    OUTPUT
+        "${XDG_SHELL_HEADER}"
+        "${XDG_SHELL_C}"
+    COMMAND
+        "${WAYLAND_SCANNER}" client-header
+        "${XDG_SHELL_XML}"
+        "${XDG_SHELL_HEADER}"
+    COMMAND
+        "${WAYLAND_SCANNER}" private-code
+        "${XDG_SHELL_XML}"
+        "${XDG_SHELL_C}"
+    DEPENDS
+        "${XDG_SHELL_XML}"
+    COMMENT "Generating xdg-shell protocol"
     VERBATIM
 )
+
 add_custom_command(
     OUTPUT
         "${RELATIVE_POINTER_HEADER}"
@@ -99,6 +112,7 @@ list(REMOVE_ITEM XWAY_SOURCES
 
 add_library(xway STATIC
       ${XWAY_SOURCES}
+	  "${XDG_SHELL_HEADER}"
       "${XDG_SHELL_C}"
      "${RELATIVE_POINTER_C}"
   "${POINTER_CONSTRAINTS_C}"
