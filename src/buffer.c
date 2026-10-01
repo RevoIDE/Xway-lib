@@ -119,7 +119,6 @@ int xway_buffer_create(t_xway_app *app)
 		xway_buffer_cleanup(app);
 		return (-1);
 	}
-	app->stride_bytes = 0;
 	app->buffer_busy = 0;
 
 	return (0);

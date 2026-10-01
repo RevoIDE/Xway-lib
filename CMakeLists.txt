@@ -20,6 +20,28 @@ set(XDG_SHELL_XML
 set(XDG_SHELL_C
     "${CMAKE_CURRENT_BINARY_DIR}/xdg-shell-protocol.c"
 )
+set(RELATIVE_POINTER_HEADER
+    "${CMAKE_CURRENT_BINARY_DIR}/relative-pointer-unstable-v1-client-protocol.h"
+)
+
+set(RELATIVE_POINTER_C
+    "${CMAKE_CURRENT_BINARY_DIR}/relative-pointer-unstable-v1-protocol.c"
+)
+
+set(POINTER_CONSTRAINTS_HEADER
+    "${CMAKE_CURRENT_BINARY_DIR}/pointer-constraints-unstable-v1-client-protocol.h"
+)
+
+set(POINTER_CONSTRAINTS_C
+    "${CMAKE_CURRENT_BINARY_DIR}/pointer-constraints-unstable-v1-protocol.c"
+)
+set(RELATIVE_POINTER_XML
+    "${WAYLAND_PROTOCOLS_DIR}/unstable/relative-pointer/relative-pointer-unstable-v1.xml"
+)
+
+set(POINTER_CONSTRAINTS_XML
+    "${WAYLAND_PROTOCOLS_DIR}/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml"
+)
 
 add_custom_command(
     OUTPUT "${XDG_SHELL_C}"
@@ -29,19 +51,58 @@ add_custom_command(
     COMMENT "Generation de xdg-shell-protocol.c"
     VERBATIM
 )
+add_custom_command(
+    OUTPUT
+        "${RELATIVE_POINTER_HEADER}"
+        "${RELATIVE_POINTER_C}"
+    COMMAND
+        "${WAYLAND_SCANNER}" client-header
+        "${RELATIVE_POINTER_XML}"
+        "${RELATIVE_POINTER_HEADER}"
+    COMMAND
+        "${WAYLAND_SCANNER}" private-code
+        "${RELATIVE_POINTER_XML}"
+        "${RELATIVE_POINTER_C}"
+    DEPENDS
+        "${RELATIVE_POINTER_XML}"
+    COMMENT
+        "Generating relative pointer protocol"
+    VERBATIM
+)
 
-  file(GLOB_RECURSE XWAY_SOURCES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
-  )
+add_custom_command(
+    OUTPUT
+        "${POINTER_CONSTRAINTS_HEADER}"
+        "${POINTER_CONSTRAINTS_C}"
+    COMMAND
+        "${WAYLAND_SCANNER}" client-header
+        "${POINTER_CONSTRAINTS_XML}"
+        "${POINTER_CONSTRAINTS_HEADER}"
+    COMMAND
+        "${WAYLAND_SCANNER}" private-code
+        "${POINTER_CONSTRAINTS_XML}"
+        "${POINTER_CONSTRAINTS_C}"
+    DEPENDS
+        "${POINTER_CONSTRAINTS_XML}"
+    COMMENT
+        "Generating pointer constraints protocol"
+    VERBATIM
+)
 
-  list(REMOVE_ITEM XWAY_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
-  )
+file(GLOB_RECURSE XWAY_SOURCES CONFIGURE_DEPENDS
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+)
 
-  add_library(xway STATIC
-        ${XWAY_SOURCES}
-        "${XDG_SHELL_C}"
-  )
+list(REMOVE_ITEM XWAY_SOURCES
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
+)
+
+add_library(xway STATIC
+      ${XWAY_SOURCES}
+      "${XDG_SHELL_C}"
+     "${RELATIVE_POINTER_C}"
+  "${POINTER_CONSTRAINTS_C}"
+)
 
 add_executable(xway-main src/main.c)
 
@@ -54,6 +115,7 @@ target_include_directories(xway PUBLIC
 pkg_check_modules(WAYLAND REQUIRED wayland-client)
 
 target_include_directories(xway PRIVATE
+	"${CMAKE_CURRENT_BINARY_DIR}"
     ${WAYLAND_INCLUDE_DIRS}
 )
 
