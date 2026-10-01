@@ -203,7 +203,7 @@ int	xway_present(t_xway_app *app)
 int	xway_is_running	(const t_xway_app *app)
 {
 	if (!app)
-		return (-1);
+		return (0);
 
 	return app->running != 0;
 }
@@ -302,7 +302,17 @@ int xway_poll_events(t_xway_app *app)
 
 int	xway_dispatch(t_xway_app *app)
 {
-	return (wl_display_dispatch(app->display));
+	int		result;
+
+	if(!app || !app->display)
+		return (-1);
+
+	result = wl_display_dispatch(app->display);
+
+	if(result == -1)
+		app->running = 0;
+
+	return (result);
 }
 
 void	xway_blit(t_xway_app *app, uint32_t *pixels)
