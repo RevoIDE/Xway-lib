@@ -68,6 +68,9 @@ typedef struct s_xway_app
 	double					mouse_x;
 	double					mouse_y;
 	int						pointer_focused;
+	t_xway_mouse_button_callback mouse_button_callback;
+	void					*mouse_button_user_data;
+
 
 	struct zwp_relative_pointer_manager_v1		*relative_pointer_manager;
 	struct zwp_pointer_constraints_v1			*pointer_constraints;

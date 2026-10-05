@@ -85,6 +85,8 @@ static void on_pointer_leave(
 		struct wl_surface *surface)
 {
 	t_xway_app *app;
+	uint8_t		buttons_down[XWAY_MOUSE_BUTTON_COUNT];
+	t_xway_mouse_button button;
 
 	(void)pointer;
 	(void)serial;
@@ -92,9 +94,19 @@ static void on_pointer_leave(
 	app = data;
 	if(surface != app->surface)
 		return;
-
+	
+	memcpy(buttons_down,app->mouse_buttons_down,sizeof(buttons_down));
 	app->pointer_focused = 0;
-	memset(app->mouse_buttons_down, 0, sizeof(app->mouse_buttons_down));
+	memset(app->mouse_buttons_down,0,sizeof(app->mouse_buttons_down));
+
+	button = XWAY_MOUSE_BUTTON_UNKNOWN + 1;
+	while(button < XWAY_MOUSE_BUTTON_COUNT)
+	{
+		if( buttons_down[button] && app->mouse_button_callback)
+			app->mouse_button_callback(app,button,XWAY_MOUSE_RELEASED,app->mouse_button_user_data);
+
+		button++;
+	}
 }
 
 static void on_pointer_motion(
@@ -126,6 +138,7 @@ static void		on_pointer_button(
 {
 	t_xway_app		*app;
 	t_xway_mouse_button		xway_button;
+	t_xway_mouse_action		action;
 
 	(void)pointer;
 	(void)serial;
@@ -140,9 +153,24 @@ static void		on_pointer_button(
 		return;
 
 	if(state == WL_POINTER_BUTTON_STATE_PRESSED)
+	{
 		app->mouse_buttons_down[xway_button] = 1;
+		action = XWAY_MOUSE_PRESSED;
+	}
 	else if (state == WL_POINTER_BUTTON_STATE_RELEASED)
+	{
 		 app->mouse_buttons_down[xway_button] = 0;
+		 action = XWAY_MOUSE_RELEASED;
+	}
+	else
+		return;
+
+	if (app->mouse_button_callback)
+		app->mouse_button_callback(
+				app,
+				xway_button,
+				action,
+				app->mouse_button_user_data);
 }
 
 static void  on_pointer_axis(

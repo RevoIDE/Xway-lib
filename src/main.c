@@ -31,33 +31,22 @@ static void draw_frame(t_xway_frame *frame)
 		y++;
 	}
 }
-static void	check_mouse_buttons(t_xway_app *app)
+static void on_mouse_button(
+		t_xway_app *app,
+		t_xway_mouse_button button,
+		t_xway_mouse_action action,
+		void *user_data)
 {
-	static	const char *names[XWAY_MOUSE_BUTTON_COUNT] =
-	{
+	static const char *names[XWAY_MOUSE_BUTTON_COUNT] = {
+		[XWAY_MOUSE_BUTTON_UNKNOWN] = "unknown",
 		[XWAY_MOUSE_BUTTON_LEFT] = "left",
 		[XWAY_MOUSE_BUTTON_RIGHT] = "right",
 		[XWAY_MOUSE_BUTTON_MIDDLE] = "middle"
 	};
-	static int previous[XWAY_MOUSE_BUTTON_COUNT];
-	t_xway_mouse_button button;
-	int current;
-	button = XWAY_MOUSE_BUTTON_UNKNOWN +  1;
-	while(button < XWAY_MOUSE_BUTTON_COUNT)
-	{
-		current = xway_mouse_button_down(app, button);
-		if(current != previous[button])
-		{
-			if(current)
-				fprintf(stderr, "xway_lib: mouse %s pressed\n",names[button]);
-			else
-				fprintf(stderr, "xway_lib: mouse %s released\n",names[button]);
-		previous[button] = current;
-		}
-		button++;
-	}
-}
 
+	(void)user_data;
+	fprintf(stderr, "callback: mouse %s %s (down=%d)\n",names[button],action == XWAY_MOUSE_PRESSED ? "pressed" : " released",xway_mouse_button_down(app,button));
+}
 static void check_mouse_position(t_xway_app *app)
 {
 	static double previous_x = -1.0;
@@ -127,7 +116,6 @@ static int run_app(t_xway_app *app)
 			break;
 
 		check_mouse_position(app);
-		check_mouse_buttons(app);
 		check_relative_mouse(app);
 
 		if(xway_frame_ready(app))
@@ -185,6 +173,7 @@ int main(void)
 		return (EXIT_FAILURE);
 
 	xway_set_key_callback(app,on_key,NULL);
+	xway_set_mouse_button_callback(app, on_mouse_button, NULL);
 
 	exit_status = run_app(app);
 

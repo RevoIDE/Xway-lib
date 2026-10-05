@@ -36,7 +36,19 @@ typedef enum e_xway_mouse_button
 	XWAY_MOUSE_BUTTON_RIGHT,
 	XWAY_MOUSE_BUTTON_MIDDLE,
 	XWAY_MOUSE_BUTTON_COUNT
-}	t_xway_mouse_button;
+}	t_xway_mouse_button ;
+
+typedef enum e_xway_mouse_action
+{
+	XWAY_MOUSE_RELEASED,
+	XWAY_MOUSE_PRESSED
+}	t_xway_mouse_action;
+
+typedef void (*t_xway_mouse_button_callback)(
+		t_xway_app *app,
+		t_xway_mouse_button button,
+		t_xway_mouse_action action,
+		void *user_data);
 
 typedef void	(*t_xway_key_callback)(
 		t_xway_app *app,
@@ -223,4 +235,9 @@ int xway_mouse_delta(
 		t_xway_app *app,
 		double *delta_x,
 		double *delta_y);
+void xway_set_mouse_button_callback(
+		t_xway_app *app,
+		t_xway_mouse_button_callback callback,
+		void *user_data);
+
 #endif

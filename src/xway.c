@@ -347,3 +347,17 @@ void xway_set_key_callback(t_xway_app *app, t_xway_key_callback callback, void *
 	app->key_callback = callback;
 	app->key_user_data = user_data;
 }
+
+void xway_set_mouse_button_callback(
+		t_xway_app *app,
+		t_xway_mouse_button_callback callback,
+		void *user_data)
+{
+	if(!app)
+		return ;
+
+	app->mouse_button_callback = callback;
+	app->mouse_button_user_data = user_data;
+}
+
+
