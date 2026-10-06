@@ -30,14 +30,13 @@ static void on_toplevel_configure(
 
 	app = data;
 
-	if(width <= 0 || height <= 0)
+	if (width <= 0 || height <= 0)
 		return;
-	if(width == app->width && height == app->height)
+	if (width == app->width && height == app->height)
 		return;
 	app->pending_width = width;
 	app->pending_height = height;
 	app->resize_pending = 1;
-
 }
 
 static void on_toplevel_close(void *data, struct xdg_toplevel *toplevel)
@@ -114,17 +113,17 @@ int xway_window_create(t_xway_app *app)
 
 void xway_window_cleanup(t_xway_app *app)
 {
-	if(!app)
-		return ;
-	if(app->frame_callback)
+	if (!app)
+		return;
+	if (app->frame_callback)
 		wl_callback_destroy(app->frame_callback);
 	app->frame_callback = NULL;
 	app->frame_ready = 0;
-	if(app->toplevel)
+	if (app->toplevel)
 		xdg_toplevel_destroy(app->toplevel);
-	if(app->xdg_surface)
+	if (app->xdg_surface)
 		xdg_surface_destroy(app->xdg_surface);
-	if(app->surface)
+	if (app->surface)
 		wl_surface_destroy(app->surface);
 	app->toplevel = NULL;
 	app->xdg_surface = NULL;
