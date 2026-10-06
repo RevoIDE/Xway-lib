@@ -231,10 +231,17 @@ int	xway_mouse_button_down(const	t_xway_app *app,t_xway_mouse_button button);
 int		xway_mouse_position(const t_xway_app *app,double *x,double *y);
 int xway_mouse_capture(t_xway_app *app, int enabled);
 int xway_mouse_captured(const t_xway_app *app);
+
 int xway_mouse_delta(
 		t_xway_app *app,
 		double *delta_x,
 		double *delta_y);
+
+int xway_mouse_scroll(
+		t_xway_app *app,
+		double *scroll_x,
+		double *scroll_y);
+
 void xway_set_mouse_button_callback(
 		t_xway_app *app,
 		t_xway_mouse_button_callback callback,

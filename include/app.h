@@ -19,6 +19,9 @@ struct	zwp_relative_pointer_manager_v1;
 struct	zwp_relative_pointer_v1;
 struct	zwp_pointer_constraints_v1;
 struct	zwp_locked_pointer_v1;
+struct	wl_cursor_theme;
+struct	wl_cursor;
+
 
 typedef struct s_xway_app
 {
@@ -68,6 +71,11 @@ typedef struct s_xway_app
 	double					mouse_x;
 	double					mouse_y;
 	int						pointer_focused;
+	uint32_t				pointer_enter_serial;
+	struct wl_surface		*cursor_surface;
+	struct wl_cursor_theme	*cursor_theme;
+	struct wl_cursor		*default_cursor;
+	int						cursor_hidden;
 	t_xway_mouse_button_callback mouse_button_callback;
 	void					*mouse_button_user_data;
 
@@ -79,6 +87,8 @@ typedef struct s_xway_app
 
 	double		mouse_delta_x;
 	double		mouse_delta_y;
+	double		mouse_scroll_x;
+	double		mouse_scroll_y;
 	int			pointer_locked;
 
 	int						running;

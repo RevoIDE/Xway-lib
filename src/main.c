@@ -1,3 +1,4 @@
+#include <math.h>
 #define _GNU_SOURCE
 
 #include "xway.h"
@@ -88,6 +89,18 @@ static void check_relative_mouse(t_xway_app *app)
 
 	fprintf(stderr,"xway_lib: relative dx=%.2f dy=%.2f\n",delta_x,delta_y);
 }
+static void check_mouse_scroll(t_xway_app *app)
+{
+	double scroll_x;
+	double scroll_y;
+
+	if(xway_mouse_scroll(app, &scroll_x, &scroll_y) == -1)
+		return;
+	fprintf(stderr,
+			"xway_lib: scroll x=%.2f y=%.2f\n",
+			scroll_x,
+			scroll_y);
+}
 static int run_app(t_xway_app *app)
 {
 	struct timespec pause;
@@ -115,8 +128,9 @@ static int run_app(t_xway_app *app)
 		if(!xway_is_running(app))
 			break;
 
-		check_mouse_position(app);
+		// check_mouse_position(app);
 		check_relative_mouse(app);
+		check_mouse_scroll(app);
 
 		if(xway_frame_ready(app))
 		{
@@ -137,6 +151,7 @@ static int run_app(t_xway_app *app)
 	}
 	return (EXIT_SUCCESS);
 }
+
 
 static void on_key(
 		t_xway_app *app,
