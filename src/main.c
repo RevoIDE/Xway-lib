@@ -103,6 +103,8 @@ static void check_mouse_scroll(t_xway_app *app)
 
 	if (xway_mouse_scroll(app, &scroll_x, &scroll_y) == -1)
 		return;
+	if (scroll_x == 0.0 && scroll_y == 0.0)
+		return;
 	fprintf(stderr, "xway_lib: scroll x=%.2f y=%.2f\n", scroll_x, scroll_y);
 }
 
