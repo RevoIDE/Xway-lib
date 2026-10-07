@@ -15,56 +15,55 @@
 
 #define X(name) [name] = #name,
 
-static const char *g_xway_key_names[XWAY_KEY_COUNT] =
-{
-	#include "xway_keys.def"
+static const char *g_xway_key_names[XWAY_KEY_COUNT] = {
+#include "xway_keys.def"
 };
 
 #undef X
 
-const char	*xway_key_name(t_xway_key key)
+const char *xway_key_name(t_xway_key key)
 {
-	if(key < XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
+	if (key < XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
 		return ("XWAY_KEY_UNKNOWN");
 	return (g_xway_key_names[key]);
 }
 
-void	xway_destroy(t_xway_app *app)
+void xway_destroy(t_xway_app *app)
 {
-	if(!app)
+	if (!app)
 		return;
 
 	xway_app_cleanup(app);
 	free(app);
 }
 
-int xway_key_down(const t_xway_app  *app, t_xway_key key)
+int xway_key_down(const t_xway_app *app, t_xway_key key)
 {
-	if(!app)
+	if (!app)
 		return (0);
 
-	if(!app->keyboard_focused)
+	if (!app->keyboard_focused)
 		return (0);
 
-	if(key <= XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
+	if (key <= XWAY_KEY_UNKNOWN || key >= XWAY_KEY_COUNT)
 		return (0);
 	return (app->keys_down[key] != 0);
 }
 
-int		xway_mouse_button_down(const t_xway_app *app, t_xway_mouse_button button)
+int xway_mouse_button_down(const t_xway_app *app, t_xway_mouse_button button)
 {
-	if(!app)
+	if (!app)
 		return (0);
-	if(!app->pointer_focused)
-		return(0);
-	if(button <= XWAY_MOUSE_BUTTON_UNKNOWN || button >= XWAY_MOUSE_BUTTON_COUNT)
+	if (!app->pointer_focused)
 		return (0);
-	return	(app->mouse_buttons_down[button] != 0);
+	if (button <= XWAY_MOUSE_BUTTON_UNKNOWN || button >= XWAY_MOUSE_BUTTON_COUNT)
+		return (0);
+	return (app->mouse_buttons_down[button] != 0);
 }
 
 int xway_mouse_position(const t_xway_app *app, double *x, double *y)
 {
-	if(!app || !x || !y)
+	if (!app || !x || !y)
 		return (-1);
 
 	*x = app->mouse_x;
@@ -72,18 +71,19 @@ int xway_mouse_position(const t_xway_app *app, double *x, double *y)
 
 	return (0);
 }
-t_xway_app	*xway_create(int width, int height, const char *title)
+
+t_xway_app *xway_create(int width, int height, const char *title)
 {
 	t_xway_app *app;
 
-	if(width <= 0 || height <= 0 || !title)
+	if (width <= 0 || height <= 0 || !title)
 		return (NULL);
 
 	app = calloc(1, sizeof(*app));
 	if (!app)
 		return (NULL);
 
-	app->width	= width;
+	app->width = width;
 	app->height = height;
 
 	app->pending_width = width;
@@ -113,7 +113,10 @@ t_xway_app	*xway_create(int width, int height, const char *title)
 	return app;
 }
 
-static void on_frame_done(void *data, struct wl_callback *callback, uint32_t callback_data)
+static void on_frame_done(
+	void *data,
+	struct wl_callback *callback,
+	uint32_t callback_data)
 {
 	t_xway_app *app;
 
@@ -178,21 +181,21 @@ int xway_wait_frame(t_xway_app *app)
 	return (0);
 }
 
-int	xway_present(t_xway_app *app)
+int xway_present(t_xway_app *app)
 {
 	if (!app)
 		return (-1);
 
 	if (!app->surface || !app->buffer)
 		return (-1);
-	if(app->buffer_busy)
+	if (app->buffer_busy)
 		return (1);
 
 	if (xway_request_frame(app) == -1)
 		return (-1);
 
-	wl_surface_attach(app->surface, app->buffer, 0,0);
-	wl_surface_damage(app->surface, 0, 0,app->width, app->height);
+	wl_surface_attach(app->surface, app->buffer, 0, 0);
+	wl_surface_damage(app->surface, 0, 0, app->width, app->height);
 	wl_surface_commit(app->surface);
 
 	app->buffer_busy = 1;
@@ -200,15 +203,15 @@ int	xway_present(t_xway_app *app)
 	return (0);
 }
 
-int	xway_is_running	(const t_xway_app *app)
+int xway_is_running(const t_xway_app *app)
 {
 	if (!app)
-		return (-1);
+		return (0);
 
 	return app->running != 0;
 }
 
-int xway_quit		(t_xway_app *app)
+int xway_quit(t_xway_app *app)
 {
 	if (!app)
 		return (-1);
@@ -218,7 +221,7 @@ int xway_quit		(t_xway_app *app)
 	return (app->running);
 }
 
-int	xway_wait_events(t_xway_app *app)
+int xway_wait_events(t_xway_app *app)
 {
 	if (!app || !app->display)
 		return (-1);
@@ -234,16 +237,16 @@ int	xway_wait_events(t_xway_app *app)
 
 int xway_poll_events(t_xway_app *app)
 {
-	struct pollfd 	fd;
-	int 			result;
-	int 			saved_errno;
+	struct pollfd fd;
+	int result;
+	int saved_errno;
 
 	if (!app || !app->display)
 		return (-1);
 
 	while (wl_display_prepare_read(app->display) != 0)
 	{
-		if	(wl_display_dispatch_pending(app->display) == -1)
+		if (wl_display_dispatch_pending(app->display) == -1)
 		{
 			app->running = 0;
 			return (-1);
@@ -261,7 +264,7 @@ int xway_poll_events(t_xway_app *app)
 	fd.events = POLLIN;
 	fd.revents = 0;
 
-	result = poll(&fd,  1,  0);
+	result = poll(&fd, 1, 0);
 	if (result == -1)
 	{
 		saved_errno = errno;
@@ -299,13 +302,22 @@ int xway_poll_events(t_xway_app *app)
 	return (0);
 }
 
-
-int	xway_dispatch(t_xway_app *app)
+int xway_dispatch(t_xway_app *app)
 {
-	return (wl_display_dispatch(app->display));
+	int result;
+
+	if (!app || !app->display)
+		return (-1);
+
+	result = wl_display_dispatch(app->display);
+
+	if (result == -1)
+		app->running = 0;
+
+	return (result);
 }
 
-void	xway_blit(t_xway_app *app, uint32_t *pixels)
+void xway_blit(t_xway_app *app, uint32_t *pixels)
 {
 	uint8_t *dst_row;
 	uint8_t *src_row;
@@ -318,10 +330,8 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels)
 	y = 0;
 	while (y < app->height)
 	{
-		dst_row = (uint8_t *) app->pixels
-				+ (size_t) y * (size_t) app->stride_bytes;
-		src_row = (uint8_t *) pixels
-				+ (size_t) y * (size_t)app->width * sizeof(uint32_t);
+		dst_row = (uint8_t *)app->pixels + (size_t)y * (size_t)app->stride_bytes;
+		src_row = (uint8_t *)pixels + (size_t)y * (size_t)app->width * sizeof(uint32_t);
 
 		memcpy(dst_row, src_row, (size_t)app->width * sizeof(uint32_t));
 
@@ -329,11 +339,26 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels)
 	}
 }
 
-void xway_set_key_callback(t_xway_app *app, t_xway_key_callback callback, void *user_data)
+void xway_set_key_callback(
+	t_xway_app *app,
+	t_xway_key_callback callback,
+	void *user_data)
 {
-	if(!app)
-	return;
+	if (!app)
+		return;
 
 	app->key_callback = callback;
 	app->key_user_data = user_data;
+}
+
+void xway_set_mouse_button_callback(
+	t_xway_app *app,
+	t_xway_mouse_button_callback callback,
+	void *user_data)
+{
+	if (!app)
+		return;
+
+	app->mouse_button_callback = callback;
+	app->mouse_button_user_data = user_data;
 }

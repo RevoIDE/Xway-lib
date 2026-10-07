@@ -6,15 +6,15 @@
 
 void xway_seat_cleanup(t_xway_app *app)
 {
-	if(!app)
+	if (!app)
 		return;
 
 	xway_keyboard_cleanup(app);
 	xway_mouse_cleanup(app);
 
-	if(app->seat)
+	if (app->seat)
 	{
-		if(wl_seat_get_version(app->seat) >= WL_SEAT_RELEASE_SINCE_VERSION)
+		if (wl_seat_get_version(app->seat) >= WL_SEAT_RELEASE_SINCE_VERSION)
 			wl_seat_release(app->seat);
 		else
 			wl_seat_destroy(app->seat);
@@ -24,11 +24,11 @@ void xway_seat_cleanup(t_xway_app *app)
 	app->has_keyboard = 0;
 	app->has_pointer = 0;
 }
+
 static void on_seat_capabilities(
-		void *data,
-		struct wl_seat *seat,
-		uint32_t capabilities
-		)
+	void *data,
+	struct wl_seat *seat,
+	uint32_t capabilities)
 {
 	t_xway_app *app;
 
@@ -36,30 +36,30 @@ static void on_seat_capabilities(
 
 	app = data;
 
-	app->has_keyboard = 
-		(capabilities & WL_SEAT_CAPABILITY_KEYBOARD) != 0;
-	app->has_pointer =
-		(capabilities & WL_SEAT_CAPABILITY_POINTER) != 0;
-	if(app->has_keyboard && !app->keyboard)
+	app->has_keyboard = (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) != 0;
+	app->has_pointer = (capabilities & WL_SEAT_CAPABILITY_POINTER) != 0;
+	if (app->has_keyboard && !app->keyboard)
 	{
-		if(xway_keyboard_create(app) == -1)
+		if (xway_keyboard_create(app) == -1)
 			fprintf(stderr, "xway-lib: failed to create keyboard\n");
-
 	}
-	else if(!app->has_keyboard && app->keyboard)
+	else if (!app->has_keyboard && app->keyboard)
 		xway_keyboard_cleanup(app);
-	if(app->has_pointer && !app->pointer)
+	if (app->has_pointer && !app->pointer)
 	{
-		if(xway_mouse_create(app) == -1)
-			fprintf(stderr,"xway-lib: failed to create pointer\n");
-
+		if (xway_mouse_create(app) == -1)
+			fprintf(stderr, "xway-lib: failed to create pointer\n");
 	}
-	else if(!app->has_pointer && app->pointer)
+	else if (!app->has_pointer && app->pointer)
 		xway_mouse_cleanup(app);
-	fprintf(stderr, "xway-lib:  keyboard=%d pointer=%d\n", app->has_keyboard, app->has_pointer );
-
+	fprintf(
+		stderr,
+		"xway-lib:  keyboard=%d pointer=%d\n",
+		app->has_keyboard,
+		app->has_pointer);
 }
-static void on_seat_name(void *data,struct wl_seat *seat,const char *name)
+
+static void on_seat_name(void *data, struct wl_seat *seat, const char *name)
 {
 	(void)data;
 	(void)seat;
@@ -72,27 +72,25 @@ static const struct wl_seat_listener seat_listener = {
 	.name = on_seat_name,
 };
 
-int xway_seat_bind(
-		t_xway_app *app,
-		uint32_t global_id,
-		uint32_t server_version)
+int xway_seat_bind(t_xway_app *app, uint32_t global_id, uint32_t server_version)
 {
 	uint32_t bind_version;
 
 	bind_version = server_version;
 
-	if(bind_version > 5)
+	if (bind_version > 5)
 		bind_version = 5;
 
-	app->seat = wl_registry_bind(app->registry, global_id, &wl_seat_interface, bind_version);
+	app->seat =
+		wl_registry_bind(app->registry, global_id, &wl_seat_interface, bind_version);
 
-	if(!app->seat)
+	if (!app->seat)
 	{
 		fprintf(stderr, "xway-lib: failed to bind wl_seat\n");
 		return (-1);
 	}
 	app->seat_global_id = global_id;
-	if(wl_seat_add_listener(app->seat,&seat_listener,app) == -1 )
+	if (wl_seat_add_listener(app->seat, &seat_listener, app) == -1)
 	{
 		fprintf(stderr, "xway-lib: failed to add seat listener\n");
 		xway_seat_cleanup(app);

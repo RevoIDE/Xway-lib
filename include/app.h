@@ -15,89 +15,99 @@
 
 #define XWAY_RAW_KEY_COUNT KEY_CNT
 
-struct	zwp_relative_pointer_manager_v1;
-struct	zwp_relative_pointer_v1;
-struct	zwp_pointer_constraints_v1;
-struct	zwp_locked_pointer_v1;
+struct zwp_relative_pointer_manager_v1;
+struct zwp_relative_pointer_v1;
+struct zwp_pointer_constraints_v1;
+struct zwp_locked_pointer_v1;
+struct wl_cursor_theme;
+struct wl_cursor;
 
 typedef struct s_xway_app
 {
-	struct wl_display		*display;
-	struct wl_registry		*registry;
-	struct wl_compositor	*compositor;
-	struct wl_shm			*shm;
+	struct wl_display *display;
+	struct wl_registry *registry;
+	struct wl_compositor *compositor;
+	struct wl_shm *shm;
 
-	struct wl_surface		*surface;
-	struct xdg_wm_base		*wm_base;
-	struct xdg_surface		*xdg_surface;
-	struct xdg_toplevel		*toplevel;
+	struct wl_surface *surface;
+	struct xdg_wm_base *wm_base;
+	struct xdg_surface *xdg_surface;
+	struct xdg_toplevel *toplevel;
 
-	struct wl_buffer		*buffer;
-	int						buffer_busy;
-	uint32_t				*pixels;
-	size_t					buffer_size_bytes;
+	struct wl_buffer *buffer;
+	int buffer_busy;
+	uint32_t *pixels;
+	size_t buffer_size_bytes;
 
-	struct wl_callback		*frame_callback;
-	int						frame_ready;
+	struct wl_callback *frame_callback;
+	int frame_ready;
 
-	int32_t					width;
-	int32_t					height;
-	int32_t					stride_bytes;
+	int32_t width;
+	int32_t height;
+	int32_t stride_bytes;
 
-	int32_t					pending_width;
-	int32_t					pending_height;
-	int						resize_pending;
+	int32_t pending_width;
+	int32_t pending_height;
+	int resize_pending;
 
-	struct wl_seat			*seat;
-	struct wl_keyboard		*keyboard;
-	uint8_t					keys_down[XWAY_KEY_COUNT];
-	int						keyboard_focused;
-	t_xway_key_callback		key_callback;
-	void					*key_user_data;
-	
-	struct xkb_context		*xkb_context;
-	struct xkb_keymap		*xkb_keymap;
-	struct xkb_state		*xkb_state;
+	struct wl_seat *seat;
+	struct wl_keyboard *keyboard;
+	uint8_t keys_down[XWAY_KEY_COUNT];
+	int keyboard_focused;
+	t_xway_key_callback key_callback;
+	void *key_user_data;
 
-	uint32_t				seat_global_id;
-	int						has_keyboard;
-	int						has_pointer;
+	struct xkb_context *xkb_context;
+	struct xkb_keymap *xkb_keymap;
+	struct xkb_state *xkb_state;
 
-	struct wl_pointer		*pointer;
-	uint8_t					mouse_buttons_down[XWAY_MOUSE_BUTTON_COUNT];
-	double					mouse_x;
-	double					mouse_y;
-	int						pointer_focused;
+	uint32_t seat_global_id;
+	int has_keyboard;
+	int has_pointer;
 
-	struct zwp_relative_pointer_manager_v1		*relative_pointer_manager;
-	struct zwp_pointer_constraints_v1			*pointer_constraints;
-	struct zwp_relative_pointer_v1				*relative_pointer;
-	struct zwp_locked_pointer_v1				*locked_pointer;
+	struct wl_pointer *pointer;
+	uint8_t mouse_buttons_down[XWAY_MOUSE_BUTTON_COUNT];
+	double mouse_x;
+	double mouse_y;
+	int pointer_focused;
+	uint32_t pointer_enter_serial;
+	struct wl_surface *cursor_surface;
+	struct wl_cursor_theme *cursor_theme;
+	struct wl_cursor *default_cursor;
+	int cursor_hidden;
+	t_xway_mouse_button_callback mouse_button_callback;
+	void *mouse_button_user_data;
 
-	double		mouse_delta_x;
-	double		mouse_delta_y;
-	int			pointer_locked;
+	struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
+	struct zwp_pointer_constraints_v1 *pointer_constraints;
+	struct zwp_relative_pointer_v1 *relative_pointer;
+	struct zwp_locked_pointer_v1 *locked_pointer;
 
-	int						running;
-}	t_xway_app;
+	double mouse_delta_x;
+	double mouse_delta_y;
+	double mouse_scroll_x;
+	double mouse_scroll_y;
+	int pointer_locked;
 
+	int running;
+} t_xway_app;
 
-int		xway_app_init		(t_xway_app *app);
+int xway_app_init(t_xway_app *app);
 
-int		xway_window_create	(t_xway_app *app);
-int		xway_buffer_create	(t_xway_app *app);
-int 	xway_keyboard_create(t_xway_app *app);
+int xway_window_create(t_xway_app *app);
+int xway_buffer_create(t_xway_app *app);
+int xway_keyboard_create(t_xway_app *app);
 
-int 	xway_seat_bind(t_xway_app *app,uint32_t global_id,uint32_t server_version);
+int xway_seat_bind(t_xway_app *app, uint32_t global_id, uint32_t server_version);
 
-void 	xway_seat_cleanup(t_xway_app *app);
-void 	xway_buffer_cleanup(t_xway_app *app);
-void 	xway_window_cleanup(t_xway_app *app);
-void 	xway_keyboard_cleanup(t_xway_app *app);
-void	xway_app_cleanup(t_xway_app *app);
+void xway_seat_cleanup(t_xway_app *app);
+void xway_buffer_cleanup(t_xway_app *app);
+void xway_window_cleanup(t_xway_app *app);
+void xway_keyboard_cleanup(t_xway_app *app);
+void xway_app_cleanup(t_xway_app *app);
 
 void xway_mouse_cleanup(t_xway_app *app);
-int		xway_mouse_create(t_xway_app	*app);
+int xway_mouse_create(t_xway_app *app);
 int xway_apply_resize(t_xway_app *app);
 
 #endif
