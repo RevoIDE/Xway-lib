@@ -1,5 +1,6 @@
-#include <math.h>
 #define _GNU_SOURCE
+#include <bits/time.h>
+#include <math.h>
 
 #include "xway.h"
 
@@ -108,25 +109,56 @@ static void check_mouse_scroll(t_xway_app *app)
 	fprintf(stderr, "xway_lib: scroll x=%.2f y=%.2f\n", scroll_x, scroll_y);
 }
 
+static int prepare_frame(t_xway_app *app, t_xway_frame *frame)
+{
+	struct timespec render_time;
+	int result;
+
+	result = xway_get_frame(app, frame);
+	if (result != 0)
+		return (result);
+	draw_frame(frame);
+	render_time.tv_sec = 0;
+	render_time.tv_nsec = 12000000;
+	nanosleep(&render_time, NULL);
+	return (0);
+}
+
 static int run_app(t_xway_app *app)
 {
 	struct timespec pause;
+	struct timespec fps_start;
+	struct timespec fps_now;
+	unsigned int frame_count;
+	double elapsed;
 	t_xway_frame frame;
-
+	int frame_prepared;
 	int frame_result;
 	int present_result;
 
 	pause.tv_sec = 0;
 	pause.tv_nsec = 1000000;
+	frame_prepared = 0;
+	frame_count = 0;
+	clock_gettime(CLOCK_MONOTONIC, &fps_start);
 
-	frame_result = xway_get_frame(app, &frame);
+	frame_result = prepare_frame(app, &frame);
 	if (frame_result != 0)
 		return (EXIT_FAILURE);
-	draw_frame(&frame);
-
 	present_result = xway_present(app);
-	if (present_result == -1)
+	if (present_result != 0)
 		return (EXIT_FAILURE);
+
+	frame_count++;
+
+	frame_result = prepare_frame(app, &frame);
+	if (frame_result == -1)
+		return (EXIT_FAILURE);
+	if (frame_result == 0)
+	{
+		frame_prepared = 1;
+		fprintf(stderr, "next frame prepared while previous buffer is busy\n");
+	}
 
 	while (xway_is_running(app))
 	{
@@ -136,22 +168,36 @@ static int run_app(t_xway_app *app)
 			break;
 
 		// check_mouse_position(app);
-		check_relative_mouse(app);
-		check_mouse_scroll(app);
+		// check_relative_mouse(app);
+		// check_mouse_scroll(app);
 
-		if (xway_frame_ready(app))
+		if (!frame_prepared)
 		{
-			frame_result = xway_get_frame(app, &frame);
+			frame_result = prepare_frame(app, &frame);
 			if (frame_result == -1)
 				return (EXIT_FAILURE);
 			if (frame_result == 0)
-			{
-				// fprintf(stderr, "frame: %d x %d\n",frame.width , frame.height);
-				draw_frame(&frame);
+				frame_prepared = 1;
+		}
+		if (frame_prepared && xway_frame_ready(app))
+		{
+			present_result = xway_present(app);
+			if (present_result != 0)
+				return (EXIT_FAILURE);
 
-				present_result = xway_present(app);
-				if (present_result == -1)
-					return (EXIT_FAILURE);
+			frame_prepared = 0;
+			frame_count++;
+
+			clock_gettime(CLOCK_MONOTONIC, &fps_now);
+
+			elapsed = (double)(fps_now.tv_sec - fps_start.tv_sec)
+				+ (double)(fps_now.tv_nsec - fps_start.tv_nsec) / 1000000000.0;
+			if (elapsed >= 1.0)
+			{
+				fprintf(stderr, "FPS: %.2f\n", (double)frame_count / elapsed);
+
+				frame_count = 0;
+				fps_start = fps_now;
 			}
 		}
 		nanosleep(&pause, NULL);
