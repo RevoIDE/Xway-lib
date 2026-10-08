@@ -5,6 +5,7 @@
 
 #include <asm-generic/errno-base.h>
 #include <errno.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +83,8 @@ t_xway_app *xway_create(int width, int height, const char *title)
 	app = calloc(1, sizeof(*app));
 	if (!app)
 		return (NULL);
+
+	app->acquired_buffer_index = -1;
 
 	app->width = width;
 	app->height = height;
@@ -183,22 +186,40 @@ int xway_wait_frame(t_xway_app *app)
 
 int xway_present(t_xway_app *app)
 {
-	if (!app)
+	t_xway_buffer *buffer;
+	int i;
+
+	if (!app || !app->surface)
 		return (-1);
 
-	if (!app->surface || !app->buffer)
+	i = app->acquired_buffer_index;
+	if (i < 0 || i >= XWAY_BUFFER_COUNT)
 		return (-1);
-	if (app->buffer_busy)
+
+	buffer = &app->buffers[i];
+	if (!buffer->wayland_buffer || !buffer->pixels)
+	{
+		app->acquired_buffer_index = -1;
+		return (-1);
+	}
+
+	if (buffer->busy)
+	{
+		app->acquired_buffer_index = -1;
 		return (1);
-
+	}
 	if (xway_request_frame(app) == -1)
+	{
+		app->acquired_buffer_index = -1;
 		return (-1);
+	}
 
-	wl_surface_attach(app->surface, app->buffer, 0, 0);
-	wl_surface_damage(app->surface, 0, 0, app->width, app->height);
+	wl_surface_attach(app->surface, buffer->wayland_buffer, 0, 0);
+	wl_surface_damage(app->surface, 0, 0, buffer->width, buffer->height);
+	buffer->busy = 1;
+	app->acquired_buffer_index = -1;
+
 	wl_surface_commit(app->surface);
-
-	app->buffer_busy = 1;
 
 	return (0);
 }
@@ -319,22 +340,46 @@ int xway_dispatch(t_xway_app *app)
 
 void xway_blit(t_xway_app *app, uint32_t *pixels)
 {
+	t_xway_buffer *buffer;
 	uint8_t *dst_row;
 	uint8_t *src_row;
-
+	int acquire_result;
+	int resize_result;
+	int i;
 	int32_t y;
 
-	if (!app || !app->pixels || !pixels || app->buffer_busy)
+	if (!app || !pixels)
 		return;
 
-	y = 0;
-	while (y < app->height)
+	resize_result = xway_apply_resize(app);
+	if (resize_result != 0)
+		return;
+	acquire_result = xway_buffer_acquire(app);
+	if (acquire_result != 0)
+		return;
+
+	i = app->acquired_buffer_index;
+	if (i < 0 || i >= XWAY_BUFFER_COUNT)
 	{
-		dst_row = (uint8_t *)app->pixels + (size_t)y * (size_t)app->stride_bytes;
-		src_row = (uint8_t *)pixels + (size_t)y * (size_t)app->width * sizeof(uint32_t);
+		app->acquired_buffer_index = -1;
+		return;
+	}
 
-		memcpy(dst_row, src_row, (size_t)app->width * sizeof(uint32_t));
+	buffer = &app->buffers[i];
+	if (!buffer->pixels || !buffer->wayland_buffer || buffer->busy)
+	{
+		app->acquired_buffer_index = -1;
+		return;
+	}
 
+	y = 0;
+	while (y < buffer->height)
+	{
+		dst_row = (uint8_t *)buffer->pixels + (size_t)y * (size_t)buffer->stride_bytes;
+		src_row = (uint8_t *)pixels
+			+ (size_t)y * (size_t)buffer->width * sizeof(uint32_t);
+
+		memcpy(dst_row, src_row, (size_t)buffer->width * sizeof(uint32_t));
 		y++;
 	}
 }
