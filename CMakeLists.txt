@@ -5,6 +5,7 @@ project(xway-lib C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(XWAY_DEBUG "Enable Xway debug log" OFF)
 
 find_package(PkgConfig REQUIRED)
 find_program(WAYLAND_SCANNER wayland-scanner REQUIRED)
@@ -104,7 +105,15 @@ add_library(xway STATIC
   "${POINTER_CONSTRAINTS_C}"
 )
 
+if(XWAY_DEBUG)
+	target_compile_definitions(xway PRIVATE XWAY_DEBUG=1)
+endif()
+
 add_executable(xway-main src/main.c)
+
+if(XWAY_DEBUG)
+	target_compile_definitions(xway-main PRIVATE XWAY_DEBUG=1)
+endif()
 
 target_link_libraries(xway-main PRIVATE xway)
 

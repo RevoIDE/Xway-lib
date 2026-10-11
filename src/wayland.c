@@ -36,7 +36,7 @@ static void on_registry_global_remove(
 	(void)registry;
 
 	app = data;
-	if(app->seat && app->seat_global_id == global_id)
+	if (app->seat && app->seat_global_id == global_id)
 		xway_seat_cleanup(app);
 }
 
@@ -97,36 +97,36 @@ static void on_registry_global(
 		}
 	}
 
-	if(!app->relative_pointer_manager
-			&& strcmp(interface, zwp_relative_pointer_manager_v1_interface.name) == 0)
+	if (!app->relative_pointer_manager
+		&& strcmp(interface, zwp_relative_pointer_manager_v1_interface.name) == 0)
 	{
 		bind_version = server_version;
-		if(bind_version > (uint32_t) zwp_relative_pointer_manager_v1_interface.version)
+		if (bind_version > (uint32_t)zwp_relative_pointer_manager_v1_interface.version)
 			bind_version = (uint32_t)zwp_relative_pointer_manager_v1_interface.version;
 
 		app->relative_pointer_manager = wl_registry_bind(
-				registry,
-				global_id,
-				&zwp_relative_pointer_manager_v1_interface,
-				bind_version);
+			registry,
+			global_id,
+			&zwp_relative_pointer_manager_v1_interface,
+			bind_version);
 	}
-	if(!app->pointer_constraints
-			&& strcmp(interface, zwp_pointer_constraints_v1_interface.name) == 0)
+	if (!app->pointer_constraints
+		&& strcmp(interface, zwp_pointer_constraints_v1_interface.name) == 0)
 	{
 		bind_version = server_version;
-		if(bind_version > (uint32_t)zwp_pointer_constraints_v1_interface.version)
+		if (bind_version > (uint32_t)zwp_pointer_constraints_v1_interface.version)
 			bind_version = (uint32_t)zwp_pointer_constraints_v1_interface.version;
 
 		app->pointer_constraints = wl_registry_bind(
-				registry,
-				global_id,
-				&zwp_pointer_constraints_v1_interface,
-				bind_version);
+			registry,
+			global_id,
+			&zwp_pointer_constraints_v1_interface,
+			bind_version);
 	}
 
-	if(!app->seat && strcmp(interface, wl_seat_interface.name) == 0)
+	if (!app->seat && strcmp(interface, wl_seat_interface.name) == 0)
 	{
-		if(xway_seat_bind(app,global_id,server_version) == -1)	
+		if (xway_seat_bind(app, global_id, server_version) == -1)
 			return;
 	}
 }
@@ -165,13 +165,13 @@ void xway_app_cleanup(t_xway_app *app)
 
 	xway_seat_cleanup(app);
 
-	if(app->pointer_constraints)
+	if (app->pointer_constraints)
 	{
 		zwp_pointer_constraints_v1_destroy(app->pointer_constraints);
 		app->pointer_constraints = NULL;
 	}
 
-	if(app->relative_pointer_manager)
+	if (app->relative_pointer_manager)
 	{
 		zwp_relative_pointer_manager_v1_destroy(app->relative_pointer_manager);
 		app->relative_pointer_manager = NULL;
@@ -197,17 +197,17 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame)
 {
 	int resize_result;
 
-	if( !app || !frame)
+	if (!app || !frame)
 		return (-1);
-	
+
 	resize_result = xway_apply_resize(app);
-	if(resize_result != 0)
+	if (resize_result != 0)
 		return (resize_result);
 
-	if(!app->pixels)
+	if (!app->pixels)
 		return (-1);
 
-	if(app->buffer_busy)
+	if (app->buffer_busy)
 		return (1);
 
 	frame->pixels = app->pixels;
@@ -216,4 +216,3 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame)
 	frame->stride_bytes = app->stride_bytes;
 	return (0);
 }
-

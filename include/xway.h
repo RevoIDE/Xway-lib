@@ -4,22 +4,21 @@
 #include <stdint.h>
 typedef struct s_xway_app t_xway_app;
 
-
 typedef struct s_xway_frame
 {
-	uint32_t	*pixels;
-	int32_t		width;
-	int32_t		height;
-	int32_t		stride_bytes;
-}	t_xway_frame;
+	uint32_t *pixels;
+	int32_t width;
+	int32_t height;
+	int32_t stride_bytes;
+} t_xway_frame;
 
 #define X(name) name,
 
 typedef enum e_xway_key
 {
-	#include "xway_keys.def"
+#include "xway_keys.def"
 	XWAY_KEY_COUNT
-}	t_xway_key;
+} t_xway_key;
 
 #undef X
 
@@ -27,7 +26,7 @@ typedef enum e_xway_key_action
 {
 	XWAY_KEY_RELEASED,
 	XWAY_KEY_PRESSED
-}	t_xway_key_action;
+} t_xway_key_action;
 
 typedef enum e_xway_mouse_button
 {
@@ -36,25 +35,26 @@ typedef enum e_xway_mouse_button
 	XWAY_MOUSE_BUTTON_RIGHT,
 	XWAY_MOUSE_BUTTON_MIDDLE,
 	XWAY_MOUSE_BUTTON_COUNT
-}	t_xway_mouse_button;
+} t_xway_mouse_button;
 
-typedef void	(*t_xway_key_callback)(
-		t_xway_app *app,
-		t_xway_key key,
-		t_xway_key_action action,
-		void *user_data);
+typedef void (*t_xway_key_callback)(
+	t_xway_app *app,
+	t_xway_key key,
+	t_xway_key_action action,
+	void *user_data);
 
 /**
  * @brief Create an application and its Wayland window.
  *
- * Connect to the compositor,	creates the window and allocates the initial framebuffer.
+ * Connect to the compositor,	creates the window and allocates the initial
+ * framebuffer.
  * @param width Initial window in pixels.Must be greater than zero.
  * @param height Initial window height in pixels.Must be greater than zero.
  * @param title Window title.Must not be NULL
  *
  * @return A pointer to the created application, or NULL on failure
  */
-t_xway_app *xway_create(int width,int height,const char *title);
+t_xway_app *xway_create(int width, int height, const char *title);
 
 /**
  * @brief Destroys an Xway application and releases its resources.
@@ -77,13 +77,14 @@ int xway_present(t_xway_app *app);
 /**
  * @brief Dispatches Wayland events and waits for new events if necessary.
  *
- * This function is blocking and should generally not be used in a continuously updating engine loop.
+ * This function is blocking and should generally not be used in a continuously updating
+ * engine loop.
  *
  * @param app Application whose events will be dispatched. Must not be NULL.
  *
  * @return The result returned by wl_display_dispatch(), or -1 on failure.
  */
-int	xway_dispatch(t_xway_app *app);
+int xway_dispatch(t_xway_app *app);
 
 /**
  * @brief Checks wheter the application is still running.
@@ -99,12 +100,13 @@ int xway_is_running(const t_xway_app *app);
  *
  * @param app Application to stop.
  */
-int xway_quit		(t_xway_app *app);
+int xway_quit(t_xway_app *app);
 
 /**
  * @brief Waits for and processes Wayland events.
  *
- * This function blocks until at least one event is received. If the Wayland connection fails, the application is marked as stopped.
+ * This function blocks until at least one event is received. If the Wayland connection
+ * fails, the application is marked as stopped.
  *
  * @param app Application whose events will be processed.
  *
@@ -116,8 +118,8 @@ int xway_wait_events(t_xway_app *app);
  * @brief Processes available Wayland events without blocking.
  *
  * This functions reads and dispatchesa events already available from
- * Wayland connection and returned immediately when no event is pending.It is intended to be called ONCE during
- * each engine update.
+ * Wayland connection and returned immediately when no event is pending.It is intended
+ * to be called ONCE during each engine update.
  *
  * @param app Application whose events will be processed.
  *
@@ -128,7 +130,8 @@ int xway_poll_events(t_xway_app *app);
 /**
  * @brief Requests notification when the compositor is ready for a new frame.
  *
- * If a frame callback is already pending, this function does nothing and reports success.
+ * If a frame callback is already pending, this function does nothing and reports
+ * success.
  *
  * @param app Application requesting the frame notification.
  *
@@ -159,7 +162,8 @@ int xway_wait_frame(t_xway_app *app);
 /**
  * @brief Retrieves the current software framebuffer.
  *
- * The returned pixel memory is owned by xway and must NOT be freed by caller.Its contents may be modified by the calller before ths frame is presented.
+ * The returned pixel memory is owned by xway and must NOT be freed by caller.Its
+ * contents may be modified by the calller before ths frame is presented.
  *
  * @param app Application containning the framebuffer
  * @param frame Output structure receiving	 the framebuffer information.
@@ -175,8 +179,8 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame);
  *
  * @param app Application containning the destination framebuffer.
  * @param pixels pixels Source pixels array.
-*/
-void	xway_blit(t_xway_app *app, uint32_t *pixels);
+ */
+void xway_blit(t_xway_app *app, uint32_t *pixels);
 
 /**
  *
@@ -189,7 +193,7 @@ void	xway_blit(t_xway_app *app, uint32_t *pixels);
  *
  * @return Non-zero if the key is held down,otherwise zero.
  */
-int	xway_key_down(const t_xway_app *app, t_xway_key key);
+int xway_key_down(const t_xway_app *app, t_xway_key key);
 
 /**
  * @brief Returns the readable name of an Xway key.
@@ -208,19 +212,20 @@ const char *xway_key_name(t_xway_key key);
  * The callback is invoked for key presses, key releases and synthetic
  * releases generated when the window loses keyboard focus.
  *
- * Passing NULL as the callback disables keyboard notifications.THe user data pointer is stored without taking ownership of it.
+ * Passing NULL as the callback disables keyboard notifications.THe user data pointer is
+ * stored without taking ownership of it.
  *
  * @param app Application receiving keyboard events.
  * @param callback function called for each keyboard event, or NULL.
  * @param user_data User-defined pointer passed to the callback.
  */
-void xway_set_key_callback(t_xway_app *app,t_xway_key_callback callback,void *user_data);
-int	xway_mouse_button_down(const	t_xway_app *app,t_xway_mouse_button button);
-int		xway_mouse_position(const t_xway_app *app,double *x,double *y);
+void xway_set_key_callback(
+	t_xway_app *app,
+	t_xway_key_callback callback,
+	void *user_data);
+int xway_mouse_button_down(const t_xway_app *app, t_xway_mouse_button button);
+int xway_mouse_position(const t_xway_app *app, double *x, double *y);
 int xway_mouse_capture(t_xway_app *app, int enabled);
 int xway_mouse_captured(const t_xway_app *app);
-int xway_mouse_delta(
-		t_xway_app *app,
-		double *delta_x,
-		double *delta_y);
+int xway_mouse_delta(t_xway_app *app, double *delta_x, double *delta_y);
 #endif
