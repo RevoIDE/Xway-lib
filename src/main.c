@@ -1,17 +1,14 @@
 #define _GNU_SOURCE
-#include "xway_log.h"
 
 #include "xway.h"
-#include "app.h"
+#include "xway_log.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
-#include <wayland-client-core.h>
 
-static void draw_frame(t_xway_app *app)
+static void draw_frame(t_xway_frame *frame)
 {
 	int32_t x;
 	int32_t y;
@@ -19,13 +16,13 @@ static void draw_frame(t_xway_app *app)
 	uint32_t *row;
 
 	y = 0;
-	while (y < app->height)
+	while (y < frame->height)
 	{
-		row_start = (uint8_t *)app->pixels + (size_t)y * (size_t)app->stride_bytes;
+		row_start = (uint8_t *)frame->pixels + (size_t)y * (size_t)frame->stride_bytes;
 		row = (uint32_t *)row_start;
 
 		x = 0;
-		while (x < app->width)
+		while (x < frame->width)
 		{
 			row[x] = 0x00FFFFFF;
 			x++;
@@ -34,33 +31,33 @@ static void draw_frame(t_xway_app *app)
 	}
 }
 
-static void check_mouse_buttons(t_xway_app *app)
+static void on_mouse_button(
+	t_xway_app *app,
+	t_xway_mouse_button button,
+	t_xway_mouse_action action,
+	void *user_data)
 {
+	(void)app;
+	(void)button;
+	(void)action;
+	(void)user_data;
 
 #if defined(XWAY_DEBUG) && XWAY_DEBUG
 	static const char *names[XWAY_MOUSE_BUTTON_COUNT] = {
+		[XWAY_MOUSE_BUTTON_UNKNOWN] = "unknown",
 		[XWAY_MOUSE_BUTTON_LEFT] = "left",
 		[XWAY_MOUSE_BUTTON_RIGHT] = "right",
 		[XWAY_MOUSE_BUTTON_MIDDLE] = "middle"};
+
+	XWAY_LOG_DEBUG(
+		"callback: mouse %s %s (down=%d)",
+		names[button],
+		action == XWAY_MOUSE_PRESSED ? "pressed" : "released",
+		xway_mouse_button_down(app, button));
 #endif
-	static int previous[XWAY_MOUSE_BUTTON_COUNT];
-	t_xway_mouse_button button;
-	int current;
-	button = XWAY_MOUSE_BUTTON_UNKNOWN + 1;
-	while (button < XWAY_MOUSE_BUTTON_COUNT)
-	{
-		current = xway_mouse_button_down(app, button);
-		if (current != previous[button])
-		{
-			if (current)
-				XWAY_LOG_DEBUG("mouse %s pressed", names[button]);
-			else
-				XWAY_LOG_DEBUG("mouse %s released", names[button]);
-		}
-		previous[button] = current;
-		button++;
-	}
 }
+
+#if defined(XWAY_DEBUG) && XWAY_DEBUG
 
 static void check_mouse_position(t_xway_app *app)
 {
@@ -93,7 +90,6 @@ static void check_relative_mouse(t_xway_app *app)
 			XWAY_LOG_DEBUG("pointer captured");
 		else
 			XWAY_LOG_DEBUG("pointer released");
-
 		previous_capture_state = captured;
 	}
 	if (xway_mouse_delta(app, &delta_x, &delta_y) == -1)
@@ -105,21 +101,70 @@ static void check_relative_mouse(t_xway_app *app)
 	XWAY_LOG_DEBUG("relative dx=%.2f dy=%.2f", delta_x, delta_y);
 }
 
+static void check_mouse_scroll(t_xway_app *app)
+{
+	double scroll_x;
+	double scroll_y;
+
+	if (xway_mouse_scroll(app, &scroll_x, &scroll_y) == -1)
+		return;
+	if (scroll_x == 0.0 && scroll_y == 0.0)
+		return;
+	XWAY_LOG_DEBUG("scroll x=%.2f y=%.2f", scroll_x, scroll_y);
+}
+
+#endif
+
+static int prepare_frame(t_xway_app *app, t_xway_frame *frame)
+{
+	struct timespec render_time;
+	int result;
+
+	result = xway_get_frame(app, frame);
+	if (result != 0)
+		return (result);
+
+	draw_frame(frame);
+	render_time.tv_sec = 0;
+	render_time.tv_nsec = 12000000;
+	nanosleep(&render_time, NULL);
+	return (0);
+}
+
 static int run_app(t_xway_app *app)
 {
 	struct timespec pause;
+	struct timespec fps_start;
+	struct timespec fps_now;
+	unsigned int frame_count;
+	double elapsed;
 	t_xway_frame frame;
-
+	int frame_prepared;
 	int frame_result;
 	int present_result;
 
 	pause.tv_sec = 0;
 	pause.tv_nsec = 1000000;
+	frame_prepared = 0;
+	frame_count = 0;
+	clock_gettime(CLOCK_MONOTONIC, &fps_start);
 
-	draw_frame(app);
-	present_result = xway_present(app);
-	if (present_result == -1)
+	frame_result = prepare_frame(app, &frame);
+	if (frame_result != 0)
 		return (EXIT_FAILURE);
+	present_result = xway_present(app);
+	if (present_result != 0)
+		return (EXIT_FAILURE);
+	frame_count++;
+
+	frame_result = prepare_frame(app, &frame);
+	if (frame_result == -1)
+		return (EXIT_FAILURE);
+	if (frame_result == 0)
+	{
+		frame_prepared = 1;
+		XWAY_LOG_DEBUG("next frame prepared while previous buffer is busy");
+	}
 
 	while (xway_is_running(app))
 	{
@@ -128,23 +173,39 @@ static int run_app(t_xway_app *app)
 		if (!xway_is_running(app))
 			break;
 
+#if defined(XWAY_DEBUG) && XWAY_DEBUG
 		check_mouse_position(app);
-		check_mouse_buttons(app);
 		check_relative_mouse(app);
+		check_mouse_scroll(app);
+#endif
 
-		if (xway_frame_ready(app))
+		if (!frame_prepared)
 		{
-			frame_result = xway_get_frame(app, &frame);
+			frame_result = prepare_frame(app, &frame);
 			if (frame_result == -1)
 				return (EXIT_FAILURE);
 			if (frame_result == 0)
-			{
-				// fprintf(stderr, "frame: %d x %d\n",frame.width , frame.height);
-				draw_frame(app);
+				frame_prepared = 1;
+		}
+		if (frame_prepared && xway_frame_ready(app))
+		{
+			present_result = xway_present(app);
+			if (present_result != 0)
+				return (EXIT_FAILURE);
 
-				present_result = xway_present(app);
-				if (present_result == -1)
-					return (EXIT_FAILURE);
+			frame_prepared = 0;
+			frame_count++;
+
+			clock_gettime(CLOCK_MONOTONIC, &fps_now);
+
+			elapsed = (double)(fps_now.tv_sec - fps_start.tv_sec)
+				+ (double)(fps_now.tv_nsec - fps_start.tv_nsec) / 1000000000.0;
+			if (elapsed >= 1.0)
+			{
+				XWAY_LOG_DEBUG("FPS: %.2f", (double)frame_count / elapsed);
+
+				frame_count = 0;
+				fps_start = fps_now;
 			}
 		}
 		nanosleep(&pause, NULL);
@@ -187,7 +248,7 @@ int main(void)
 		return (EXIT_FAILURE);
 
 	xway_set_key_callback(app, on_key, NULL);
-
+	xway_set_mouse_button_callback(app, on_mouse_button, NULL);
 	exit_status = run_app(app);
 
 	xway_destroy(app);

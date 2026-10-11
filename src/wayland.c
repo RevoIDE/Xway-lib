@@ -195,7 +195,10 @@ void xway_app_cleanup(t_xway_app *app)
 
 int xway_get_frame(t_xway_app *app, t_xway_frame *frame)
 {
+	t_xway_buffer *buffer;
+	int acquire_result;
 	int resize_result;
+	int i;
 
 	if (!app || !frame)
 		return (-1);
@@ -204,15 +207,27 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame)
 	if (resize_result != 0)
 		return (resize_result);
 
-	if (!app->pixels)
+	acquire_result = xway_buffer_acquire(app);
+	if (acquire_result != 0)
+		return (acquire_result);
+
+	i = app->acquired_buffer_index;
+	if (i < 0 || i >= XWAY_BUFFER_COUNT)
+	{
+		app->acquired_buffer_index = -1;
 		return (-1);
+	}
+	buffer = &app->buffers[i];
+	if (!buffer->pixels || !buffer->wayland_buffer)
+	{
+		app->acquired_buffer_index = -1;
+		return (-1);
+	}
 
-	if (app->buffer_busy)
-		return (1);
+	frame->pixels = buffer->pixels;
+	frame->width = buffer->width;
+	frame->height = buffer->height;
+	frame->stride_bytes = buffer->stride_bytes;
 
-	frame->pixels = app->pixels;
-	frame->width = app->width;
-	frame->height = app->height;
-	frame->stride_bytes = app->stride_bytes;
 	return (0);
 }

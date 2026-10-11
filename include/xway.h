@@ -37,6 +37,18 @@ typedef enum e_xway_mouse_button
 	XWAY_MOUSE_BUTTON_COUNT
 } t_xway_mouse_button;
 
+typedef enum e_xway_mouse_action
+{
+	XWAY_MOUSE_RELEASED,
+	XWAY_MOUSE_PRESSED
+} t_xway_mouse_action;
+
+typedef void (*t_xway_mouse_button_callback)(
+	t_xway_app *app,
+	t_xway_mouse_button button,
+	t_xway_mouse_action action,
+	void *user_data);
+
 typedef void (*t_xway_key_callback)(
 	t_xway_app *app,
 	t_xway_key key,
@@ -70,7 +82,7 @@ void xway_destroy(t_xway_app *app);
  *
  * @param app application whose framebuffer will be presente.
  *
- * @return 0 on success,on -1 on failure.
+ * @return 0 on success, 1 if the framebuffer is still busy, or -1 on failure.
  */
 int xway_present(t_xway_app *app);
 
@@ -168,7 +180,8 @@ int xway_wait_frame(t_xway_app *app);
  * @param app Application containning the framebuffer
  * @param frame Output structure receiving	 the framebuffer information.
  *
- * @return 0 on success, or -1 arguments or framebuffer are invalid.
+ * @return 0 on success, 1 if the framebuffer is temporarily unavailable, or -1 on
+ * failure
  */
 int xway_get_frame(t_xway_app *app, t_xway_frame *frame);
 
@@ -180,7 +193,10 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame);
  * @param app Application containning the destination framebuffer.
  * @param pixels pixels Source pixels array.
  */
-void xway_blit(t_xway_app *app, uint32_t *pixels);
+void	xway_blit(t_xway_app *app, const uint32_t *pixels,
+	int32_t src_width, int32_t src_height);
+
+int		xway_get_size(const t_xway_app *app, int32_t *width, int32_t *height);
 
 /**
  *
@@ -227,5 +243,14 @@ int xway_mouse_button_down(const t_xway_app *app, t_xway_mouse_button button);
 int xway_mouse_position(const t_xway_app *app, double *x, double *y);
 int xway_mouse_capture(t_xway_app *app, int enabled);
 int xway_mouse_captured(const t_xway_app *app);
+
 int xway_mouse_delta(t_xway_app *app, double *delta_x, double *delta_y);
+
+int xway_mouse_scroll(t_xway_app *app, double *scroll_x, double *scroll_y);
+
+void xway_set_mouse_button_callback(
+	t_xway_app *app,
+	t_xway_mouse_button_callback callback,
+	void *user_data);
+
 #endif

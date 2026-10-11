@@ -5,6 +5,7 @@
 
 #include <asm-generic/errno-base.h>
 #include <errno.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +83,8 @@ t_xway_app *xway_create(int width, int height, const char *title)
 	app = calloc(1, sizeof(*app));
 	if (!app)
 		return (NULL);
+
+	app->acquired_buffer_index = -1;
 
 	app->width = width;
 	app->height = height;
@@ -183,22 +186,40 @@ int xway_wait_frame(t_xway_app *app)
 
 int xway_present(t_xway_app *app)
 {
-	if (!app)
+	t_xway_buffer *buffer;
+	int i;
+
+	if (!app || !app->surface)
 		return (-1);
 
-	if (!app->surface || !app->buffer)
+	i = app->acquired_buffer_index;
+	if (i < 0 || i >= XWAY_BUFFER_COUNT)
 		return (-1);
-	if (app->buffer_busy)
+
+	buffer = &app->buffers[i];
+	if (!buffer->wayland_buffer || !buffer->pixels)
+	{
+		app->acquired_buffer_index = -1;
+		return (-1);
+	}
+
+	if (buffer->busy)
+	{
+		app->acquired_buffer_index = -1;
 		return (1);
-
+	}
 	if (xway_request_frame(app) == -1)
+	{
+		app->acquired_buffer_index = -1;
 		return (-1);
+	}
 
-	wl_surface_attach(app->surface, app->buffer, 0, 0);
-	wl_surface_damage(app->surface, 0, 0, app->width, app->height);
+	wl_surface_attach(app->surface, buffer->wayland_buffer, 0, 0);
+	wl_surface_damage(app->surface, 0, 0, buffer->width, buffer->height);
+	buffer->busy = 1;
+	app->acquired_buffer_index = -1;
+
 	wl_surface_commit(app->surface);
-
-	app->buffer_busy = 1;
 
 	return (0);
 }
@@ -206,7 +227,7 @@ int xway_present(t_xway_app *app)
 int xway_is_running(const t_xway_app *app)
 {
 	if (!app)
-		return (-1);
+		return (0);
 
 	return app->running != 0;
 }
@@ -304,32 +325,93 @@ int xway_poll_events(t_xway_app *app)
 
 int xway_dispatch(t_xway_app *app)
 {
-	return (wl_display_dispatch(app->display));
+	int result;
+
+	if (!app || !app->display)
+		return (-1);
+
+	result = wl_display_dispatch(app->display);
+
+	if (result == -1)
+		app->running = 0;
+
+	return (result);
 }
 
-void xway_blit(t_xway_app *app, uint32_t *pixels)
+void	xway_blit(t_xway_app *app, const uint32_t *pixels,
+	int32_t src_width, int32_t src_height)
 {
-	uint8_t *dst_row;
-	uint8_t *src_row;
+	t_xway_buffer	*buffer;
+	uint8_t			*dst_row;
+	const uint8_t	*src_row;
+	int32_t			copy_w;
+	int32_t			copy_h;
+	int32_t			y;
+	int				i;
 
-	int32_t y;
+	if (!app || !pixels || src_width <= 0 || src_height <= 0)
+		return ;
+	if (xway_apply_resize(app) != 0)
+		return ;
+	if (xway_buffer_acquire(app) != 0)
+		return ;
 
-	if (!app || !app->pixels || !pixels || app->buffer_busy)
-		return;
+	i = app->acquired_buffer_index;
+
+	if (i < 0 || i >= XWAY_BUFFER_COUNT)
+	{
+		app->acquired_buffer_index = -1;
+		return ;
+	}
+
+	buffer = &app->buffers[i];
+
+	if (!buffer->pixels || !buffer->wayland_buffer || buffer->busy)
+	{
+		app->acquired_buffer_index = -1;
+		return ;
+	}
+
+	copy_w = buffer->width < src_width ? buffer->width : src_width;
+	copy_h = buffer->height < src_height ? buffer->height : src_height;
 
 	y = 0;
-	while (y < app->height)
-	{
-		dst_row = (uint8_t *)app->pixels + (size_t)y * (size_t)app->stride_bytes;
-		src_row = (uint8_t *)pixels + (size_t)y * (size_t)app->width * sizeof(uint32_t);
 
-		memcpy(dst_row, src_row, (size_t)app->width * sizeof(uint32_t));
+	while (y < buffer->height)
+	{
+		dst_row = (uint8_t *)buffer->pixels
+			+ (size_t)y * (size_t)buffer->stride_bytes;
+
+		if (y < copy_h)
+		{
+			src_row = (const uint8_t *)pixels
+				+ (size_t)y * (size_t)src_width * sizeof(uint32_t);
+
+			memcpy(dst_row, src_row, (size_t)copy_w * sizeof(uint32_t));
+
+			if (copy_w < buffer->width)
+				memset(dst_row + (size_t)copy_w * sizeof(uint32_t), 0,
+					(size_t)(buffer->width - copy_w) * sizeof(uint32_t));
+		}
+		else
+			memset(dst_row, 0, (size_t)buffer->width * sizeof(uint32_t));
 
 		y++;
 	}
 }
 
-void xway_set_key_callback(
+int		xway_get_size(const t_xway_app *app, int32_t *width, int32_t *height)
+{
+	if (!app || !width || !height)
+		return (-1);
+
+	*width = app->width;
+	*height = app->height;
+
+	return (0);
+}
+
+void	xway_set_key_callback(
 	t_xway_app *app,
 	t_xway_key_callback callback,
 	void *user_data)
@@ -339,4 +421,16 @@ void xway_set_key_callback(
 
 	app->key_callback = callback;
 	app->key_user_data = user_data;
+}
+
+void xway_set_mouse_button_callback(
+	t_xway_app *app,
+	t_xway_mouse_button_callback callback,
+	void *user_data)
+{
+	if (!app)
+		return;
+
+	app->mouse_button_callback = callback;
+	app->mouse_button_user_data = user_data;
 }
