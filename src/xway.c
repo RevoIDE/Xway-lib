@@ -338,53 +338,80 @@ int xway_dispatch(t_xway_app *app)
 	return (result);
 }
 
-void xway_blit(t_xway_app *app, uint32_t *pixels)
+void	xway_blit(t_xway_app *app, const uint32_t *pixels,
+	int32_t src_width, int32_t src_height)
 {
-	t_xway_buffer *buffer;
-	uint8_t *dst_row;
-	uint8_t *src_row;
-	int acquire_result;
-	int resize_result;
-	int i;
-	int32_t y;
+	t_xway_buffer	*buffer;
+	uint8_t			*dst_row;
+	const uint8_t	*src_row;
+	int32_t			copy_w;
+	int32_t			copy_h;
+	int32_t			y;
+	int				i;
 
-	if (!app || !pixels)
-		return;
-
-	resize_result = xway_apply_resize(app);
-	if (resize_result != 0)
-		return;
-	acquire_result = xway_buffer_acquire(app);
-	if (acquire_result != 0)
-		return;
+	if (!app || !pixels || src_width <= 0 || src_height <= 0)
+		return ;
+	if (xway_apply_resize(app) != 0)
+		return ;
+	if (xway_buffer_acquire(app) != 0)
+		return ;
 
 	i = app->acquired_buffer_index;
+
 	if (i < 0 || i >= XWAY_BUFFER_COUNT)
 	{
 		app->acquired_buffer_index = -1;
-		return;
+		return ;
 	}
 
 	buffer = &app->buffers[i];
+
 	if (!buffer->pixels || !buffer->wayland_buffer || buffer->busy)
 	{
 		app->acquired_buffer_index = -1;
-		return;
+		return ;
 	}
 
+	copy_w = buffer->width < src_width ? buffer->width : src_width;
+	copy_h = buffer->height < src_height ? buffer->height : src_height;
+
 	y = 0;
+
 	while (y < buffer->height)
 	{
-		dst_row = (uint8_t *)buffer->pixels + (size_t)y * (size_t)buffer->stride_bytes;
-		src_row = (uint8_t *)pixels
-			+ (size_t)y * (size_t)buffer->width * sizeof(uint32_t);
+		dst_row = (uint8_t *)buffer->pixels
+			+ (size_t)y * (size_t)buffer->stride_bytes;
 
-		memcpy(dst_row, src_row, (size_t)buffer->width * sizeof(uint32_t));
+		if (y < copy_h)
+		{
+			src_row = (const uint8_t *)pixels
+				+ (size_t)y * (size_t)src_width * sizeof(uint32_t);
+
+			memcpy(dst_row, src_row, (size_t)copy_w * sizeof(uint32_t));
+
+			if (copy_w < buffer->width)
+				memset(dst_row + (size_t)copy_w * sizeof(uint32_t), 0,
+					(size_t)(buffer->width - copy_w) * sizeof(uint32_t));
+		}
+		else
+			memset(dst_row, 0, (size_t)buffer->width * sizeof(uint32_t));
+
 		y++;
 	}
 }
 
-void xway_set_key_callback(
+int		xway_get_size(const t_xway_app *app, int32_t *width, int32_t *height)
+{
+	if (!app || !width || !height)
+		return (-1);
+
+	*width = app->width;
+	*height = app->height;
+
+	return (0);
+}
+
+void	xway_set_key_callback(
 	t_xway_app *app,
 	t_xway_key_callback callback,
 	void *user_data)

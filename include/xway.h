@@ -193,7 +193,10 @@ int xway_get_frame(t_xway_app *app, t_xway_frame *frame);
  * @param app Application containning the destination framebuffer.
  * @param pixels pixels Source pixels array.
  */
-void xway_blit(t_xway_app *app, uint32_t *pixels);
+void	xway_blit(t_xway_app *app, const uint32_t *pixels,
+	int32_t src_width, int32_t src_height);
+
+int		xway_get_size(const t_xway_app *app, int32_t *width, int32_t *height);
 
 /**
  *
