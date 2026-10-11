@@ -1,6 +1,7 @@
 #include "app.h"
 #include "types.h"
 #include "xway.h"
+#include "xway_log.h"
 
 #include <linux/input-event-codes.h>
 #include <stdint.h>
@@ -284,7 +285,7 @@ static void on_keyboard_keymap(
 		return;
 	}
 
-	fprintf(stderr, "xway-lib: XKB keymap loaded\n");
+	XWAY_LOG_DEBUG("XKB keymap loaded");
 }
 
 static void on_keyboard_enter(
@@ -317,7 +318,7 @@ static void on_keyboard_enter(
 			app->keys_down[xway_key] = 1;
 	}
 
-	fprintf(stderr, "xway-lib: keyboard focus entered\n");
+	XWAY_LOG_DEBUG("keyboard focus entered");
 }
 
 static void on_keyboard_leave(
@@ -349,8 +350,7 @@ static void on_keyboard_leave(
 			app->key_callback(app, key, XWAY_KEY_RELEASED, app->key_user_data);
 		key++;
 	}
-
-	fprintf(stderr, "xway-lib: keyboard focus left\n");
+	XWAY_LOG_DEBUG("keyboard focus left");
 }
 
 static void on_keyboard_key(
@@ -363,9 +363,11 @@ static void on_keyboard_key(
 {
 	t_xway_app *app;
 	t_xway_key xway_key;
+#if defined(XWAY_DEBUG) && XWAY_DEBUG
 	xkb_keycode_t keycode;
 	xkb_keysym_t keysym;
 	char name[128];
+#endif
 
 	(void)keyboard;
 	(void)serial;
@@ -394,6 +396,7 @@ static void on_keyboard_key(
 		else
 			app->key_callback(app, xway_key, XWAY_KEY_RELEASED, app->key_user_data);
 	}
+#if defined(XWAY_DEBUG) && XWAY_DEBUG
 	if (!app->xkb_state)
 		return;
 
@@ -403,18 +406,12 @@ static void on_keyboard_key(
 	if (xkb_keysym_get_name(keysym, name, sizeof(name)) <= 0)
 		snprintf(name, sizeof(name), "unknown");
 
-	if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
-		fprintf(
-			stderr,
-			"xway-lib: key=%u symbol=%s pressed\n",
-			(unsigned int)key,
-			name);
-	else if (state == WL_KEYBOARD_KEY_STATE_RELEASED)
-		fprintf(
-			stderr,
-			"xway-lib: key=%u symbol=%s released\n",
-			(unsigned int)key,
-			name);
+	XWAY_LOG_DEBUG(
+		"key=%u symbol=%s %s",
+		(unsigned int)key,
+		name,
+		state == WL_KEYBOARD_KEY_STATE_PRESSED ? "pressed" : "released");
+#endif
 }
 
 static void on_keyboard_modifiers(

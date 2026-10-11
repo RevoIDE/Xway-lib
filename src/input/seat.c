@@ -1,4 +1,5 @@
 #include "app.h"
+#include "xway_log.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -52,19 +53,16 @@ static void on_seat_capabilities(
 	}
 	else if (!app->has_pointer && app->pointer)
 		xway_mouse_cleanup(app);
-	fprintf(
-		stderr,
-		"xway-lib:  keyboard=%d pointer=%d\n",
-		app->has_keyboard,
-		app->has_pointer);
+	XWAY_LOG_DEBUG("keyboard=%d pointer=%d", app->has_keyboard, app->has_pointer);
 }
 
 static void on_seat_name(void *data, struct wl_seat *seat, const char *name)
 {
 	(void)data;
 	(void)seat;
+	(void)name;
 
-	fprintf(stderr, "xway-lib: seat=%s\n", name);
+	XWAY_LOG_DEBUG("seat=%s", name);
 }
 
 static const struct wl_seat_listener seat_listener = {
